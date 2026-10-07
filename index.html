@@ -77,27 +77,6 @@
   .add button{border:1.5px solid var(--ink);border-radius:999px;background:none;color:var(--ink2);
     font-family:inherit;font-size:14px;font-weight:600;padding:0 20px;}
 
-  /* ===== 列表页 ===== */
-  .list-wrap{width:min(94vw,420px);margin-top:20px;}
-  .sec-title{font-size:11px;letter-spacing:4px;color:var(--red);text-align:center;margin-bottom:16px;}
-  .card{border:2.5px solid var(--ink);border-radius:16px;padding:14px 16px;margin-bottom:12px;position:relative;}
-  .card.done{opacity:.45;}
-  .card .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .card .no{font-size:11px;letter-spacing:1px;color:#9a9a9a;}
-  .card h3{font-size:16px;font-weight:700;letter-spacing:1px;flex:1;}
-  .card.done h3{text-decoration:line-through;}
-  .card .body{font-size:14px;line-height:1.6;letter-spacing:.5px;}
-  .card .row{display:flex;gap:6px;font-size:12.5px;color:#7a7a7a;margin-top:6px;letter-spacing:.5px;}
-  .card .row b{color:var(--ink2);font-weight:600;}
-  .card .note{margin-top:10px;padding-top:9px;border-top:1.5px dashed #d8d8d8;font-size:12.5px;color:#7a7a7a;}
-  .card .label{display:inline-block;font-size:10px;letter-spacing:2px;color:#9a9a9a;margin-right:6px;}
-  .pill{font-size:11px;font-weight:700;letter-spacing:1px;border-radius:999px;padding:3px 10px;border:2px solid var(--ink);}
-  .pill.red{background:var(--red);color:#fff;border-color:var(--red);}
-  .pill.yellow{background:var(--yellow);color:var(--ink);border-color:var(--ink);}
-  .pill.plain{background:#fff;color:#9a9a9a;border-color:#d4d4d4;}
-  .pill.ink{background:var(--ink);color:#fff;}
-  .empty{text-align:center;color:#bdbdbd;font-size:13px;letter-spacing:2px;padding:40px 0;}
-
   /* ===== 底部标签栏 ===== */
   .tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bg);
     border-top:2.5px solid var(--ink);padding-bottom:env(safe-area-inset-bottom);z-index:9;}
@@ -107,38 +86,6 @@
   .tabs button.on::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);
     width:18px;height:2.5px;border-radius:2px;background:var(--red);}
   .tabs .dot{position:absolute;top:8px;margin-left:3px;width:7px;height:7px;border-radius:50%;background:var(--red);}
-
-  /* ===== 编辑相关 ===== */
-  .card .ops{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
-  .card .ops button{border:1.5px solid #d4d4d4;background:none;border-radius:999px;
-    font-family:inherit;font-size:11px;letter-spacing:1px;color:#8a8a8a;padding:4px 12px;}
-  .card .ops button:active{background:#f4f4f4;}
-  .addbtn{width:100%;border:2px dashed var(--ink);background:none;border-radius:16px;
-    font-family:inherit;font-size:13px;font-weight:600;letter-spacing:2px;color:var(--ink2);padding:12px;margin-top:2px;}
-  .tools{display:flex;gap:10px;margin:18px 0 6px;}
-  .tools button{flex:1;border:none;background:none;font-family:inherit;font-size:11px;
-    letter-spacing:2px;color:#b0b0b0;padding:6px;text-decoration:underline;text-underline-offset:3px;}
-
-  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;
-    align-items:flex-end;justify-content:center;}
-  .modal.on{display:flex;}
-  .sheet{width:min(100%,460px);background:var(--bg);border:2.5px solid var(--ink);
-    border-bottom:none;border-radius:20px 20px 0 0;max-height:88vh;display:flex;flex-direction:column;
-    animation:up .25s cubic-bezier(.2,.9,.3,1);}
-  @keyframes up{from{transform:translateY(24px);opacity:.4}to{transform:translateY(0);opacity:1}}
-  .sheet-h{padding:16px;text-align:center;font-size:14px;font-weight:700;letter-spacing:3px;
-    border-bottom:2px solid var(--ink);}
-  .sheet-b{padding:16px;overflow-y:auto;}
-  .sheet-b label{display:block;margin-bottom:13px;}
-  .sheet-b label span{display:block;font-size:11px;letter-spacing:2px;color:#9a9a9a;margin-bottom:5px;}
-  .sheet-b input,.sheet-b textarea,.sheet-b select{width:100%;border:1.5px solid #d4d4d4;border-radius:12px;
-    background:none;padding:10px 13px;font-size:15px;font-family:inherit;color:var(--ink2);outline:none;resize:none;}
-  .sheet-b input:focus,.sheet-b textarea:focus,.sheet-b select:focus{border-color:var(--ink);}
-  .sheet-f{display:flex;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom));
-    border-top:1.5px solid #eee;}
-  .sheet-f button{flex:1;border:2.5px solid var(--ink);background:none;border-radius:999px;
-    font-family:inherit;font-size:14px;font-weight:600;letter-spacing:2px;color:var(--ink2);padding:11px;}
-  .sheet-f .primary{background:var(--red);border-color:var(--red);color:#fff;}
 
   /* ===== 对战 ===== */
   .score{display:flex;align-items:center;gap:10px;}
@@ -241,14 +188,6 @@
 </div>
 </div><!-- /page-wheel -->
 
-<div class="page" id="page-topic">
-  <div class="list-wrap">
-    <div class="sec-title">议题收集</div>
-    <div id="topicList"></div>
-    <div class="tools"><button data-exp>导出给 Claude</button><button data-reset>恢复线上版</button></div>
-  </div>
-</div>
-
 <div class="page" id="page-game">
   <div class="list-wrap">
     <div class="sec-title">积分</div>
@@ -296,20 +235,8 @@
   </div>
 </div>
 
-<div class="modal" id="modal">
-  <div class="sheet">
-    <div class="sheet-h" id="mTitle">编辑</div>
-    <div class="sheet-b" id="mBody"></div>
-    <div class="sheet-f">
-      <button id="mCancel">取消</button>
-      <button id="mSave" class="primary">保存</button>
-    </div>
-  </div>
-</div>
-
 <nav class="tabs">
   <button data-page="wheel" class="on">转盘</button>
-  <button data-page="topic">议题</button>
   <button data-page="game">对战</button>
 </nav>
 
@@ -454,103 +381,6 @@ document.getElementById("addBtn").onclick=()=>{
 document.getElementById("inp").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("addBtn").click();});
 render();
 
-/* ========== 议题数据（改这里即可） ========== */
-const TOPICS=[
-  {no:1,plan:"2026/9/25-2026/9/27",topic:"中秋节-飞花令",from:"包包",join:"秀秀",
-   pri:"高",actual:"",note:"输的人吃五仁月饼"}
-];
-/* ================================================= */
-
-const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const PRI={"高":"red","中":"yellow","低":"plain"};
-
-/* 本地可编辑副本：有改动就用本地的，没有就用上面写死的 */
-const load=(k,def)=>{try{const v=JSON.parse(localStorage.getItem(k));return Array.isArray(v)?v:def.slice();}catch(e){return def.slice();}};
-let topics=load("kw_topics",TOPICS);
-const saveT=()=>localStorage.setItem("kw_topics",JSON.stringify(topics));
-
-const F_TOPIC=[
-  {k:"topic",t:"议题",req:1},{k:"from",t:"发起人"},{k:"join",t:"需参与讨论"},
-  {k:"pri",t:"优先级",opt:["高","中","低"]},
-  {k:"plan",t:"计划日期",ph:"2026/9/25-2026/9/27"},{k:"actual",t:"实际日期"},
-  {k:"note",t:"备注",area:1}
-];
-
-function renderTopics(){
-  const box=document.getElementById("topicList");
-  box.innerHTML=(topics.length?topics.map((t,i)=>`
-    <div class="card">
-      <div class="top">
-        <span class="no">NO.${esc(t.no||i+1)}</span>
-        <h3>${esc(t.topic)}</h3>
-        <span class="pill ${PRI[t.pri]||"plain"}">${esc(t.pri||"—")}</span>
-      </div>
-      <div class="row">${t.from?`<b>${esc(t.from)}</b> 发起`:""}${t.join?` · 需 <b>${esc(t.join)}</b> 参与`:""}</div>
-      <div class="row"><span class="label">计划</span>${esc(t.plan||"—")}${t.actual?`　<span class="label">实际</span>${esc(t.actual)}`:""}</div>
-      ${t.note?`<div class="note">${esc(t.note)}</div>`:""}
-      <div class="ops"><button data-e="t" data-i="${i}">编辑</button><button data-d="t" data-i="${i}">删除</button></div>
-    </div>`).join(""):'<div class="empty">暂无议题</div>')
-    +`<button class="addbtn" data-new="t">＋ 新增议题</button>`;
-  bind();
-}
-
-
-function bind(){
-  document.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>openForm(b.dataset.e,+b.dataset.i));
-  document.querySelectorAll("[data-new]").forEach(b=>b.onclick=()=>openForm(b.dataset.new,null));
-  document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{
-    const isT=b.dataset.d==="t",i=+b.dataset.i;
-    const name=topics[i].topic;
-    if(!confirm("删除「"+String(name).slice(0,12)+"…」？"))return;
-    if(isT){topics.splice(i,1);topics.forEach((t,k)=>t.no=k+1);saveT();renderTopics();}
-  });
-}
-
-/* ===== 编辑弹层 ===== */
-let cur={type:null,idx:null};
-function openForm(type,idx){
-  cur={type,idx};
-  const fields=F_TOPIC;
-  const data=idx==null?{}:topics[idx];
-  document.getElementById("mTitle").textContent=(idx==null?"新增议题":"编辑议题");
-  document.getElementById("mBody").innerHTML=fields.map(f=>{
-    const v=esc(data[f.k]||"");
-    const input=f.opt
-      ? `<select data-k="${f.k}">${f.opt.map(o=>`<option${data[f.k]===o?" selected":""}>${o}</option>`).join("")}</select>`
-      : f.area
-        ? `<textarea data-k="${f.k}" rows="2" placeholder="${f.ph||""}">${v}</textarea>`
-        : `<input data-k="${f.k}" value="${v}" placeholder="${f.ph||""}">`;
-    return `<label><span>${f.t}${f.req?" *":""}</span>${input}</label>`;
-  }).join("");
-  document.getElementById("modal").classList.add("on");
-}
-function closeForm(){document.getElementById("modal").classList.remove("on");}
-document.getElementById("mCancel").onclick=closeForm;
-document.getElementById("mSave").onclick=()=>{
-  const o={};
-  document.querySelectorAll("#mBody [data-k]").forEach(el=>o[el.dataset.k]=el.value.trim());
-  const fields=F_TOPIC;
-  const miss=fields.find(f=>f.req&&!o[f.k]);
-  if(miss){alert("「"+miss.t+"」不能为空");return;}
-  {
-    if(cur.idx==null)topics.push(o); else topics[cur.idx]=Object.assign({},topics[cur.idx],o);
-    topics.forEach((t,k)=>t.no=k+1);saveT();renderTopics();
-  }
-  closeForm();
-};
-document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeForm();};
-
-/* 导出 / 恢复 */
-document.querySelectorAll("[data-exp]").forEach(b=>b.onclick=async()=>{
-  const txt=JSON.stringify({topics},null,2);
-  try{await navigator.clipboard.writeText(txt);alert("已复制，发给 Claude 就能同步到线上");}
-  catch(e){prompt("复制下面的内容：",txt);}
-});
-document.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>{
-  if(!confirm("放弃本机的所有修改，恢复成线上那份？"))return;
-  localStorage.removeItem("kw_topics");
-  topics=TOPICS.slice();renderTopics();
-});
 
 /* ========== 积分 & 石头剪刀布 ========== */
 const G={
