@@ -510,7 +510,7 @@ const PLACES=[
   {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"玩",lat:30.755347,lng:120.759868,note:"坐船上岛看红船和烟雨楼，船要过安检。"},
   {name:"子城遗址公园",short:"子城",area:"子城",tag:"玩",lat:30.760008,lng:120.753163,note:"免费，可以上城墙，草坪能坐一会儿。"},
   {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"玩",lat:30.761275,lng:120.75138,note:"子城旁边的老教堂，外面拍照好看。"},
-  {name:"月河历史街区",short:"月河",area:"月河",tag:"吃·玩",lat:30.7706107,lng:120.7502502,note:"晚饭 + 夜景，小吃和酒吧都有。"}
+  {name:"月河历史街区",short:"月河",area:"月河",tag:"吃·玩",lat:30.7706107,lng:120.7502502,note:"晚饭 + 夜景，小吃很多。"}
 ];
 PLACES.forEach((p,i)=>p.id="plc"+i);
 function wgs2gcj(lat,lng){
@@ -644,23 +644,43 @@ function card(p,top,showD){
     el.querySelector("a").href=url;
     return el;
 }
-let locating=false;
-function locate(){
-  const st=document.getElementById("nearSt");
-  if(!navigator.geolocation){paintNear(null);st.textContent="这个浏览器拿不到定位，先按路线顺序排";return;}
-  if(locating)return;locating=true;
-  st.textContent="定位中…";
-  navigator.geolocation.getCurrentPosition(pos=>{
-    locating=false;
-    paintNear(wgs2gcj(pos.coords.latitude,pos.coords.longitude));
-  },()=>{
-    locating=false;
-    paintNear(null);st.textContent="定位没打开，先按路线顺序排";
-  },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
+/* 停在「附近」页时持续定位，走动 10 米以上就重画；离开页面或锁屏就停 */
+let watchId=null,lastHere=null,gotFix=false;
+const nearOn=()=>document.getElementById("page-near").classList.contains("on");
+function setLive(on){document.querySelector(".near-h").textContent=on?"附近收藏 · 跟着你走":"附近收藏";}
+function onPos(pos){
+  const here=wgs2gcj(pos.coords.latitude,pos.coords.longitude);
+  if(lastHere&&dist(lastHere[0],lastHere[1],here[0],here[1])<10&&gotFix)return;
+  lastHere=here;gotFix=true;setLive(true);
+  paintNear(here);
+}
+function onErr(e){
+  /* 没授权才停；信号弱、超时这类临时问题继续等，保留上一次的结果 */
+  if(e&&e.code===1){
+    stopWatch();
+    if(!gotFix){paintNear(null);document.getElementById("nearSt").textContent="定位没打开，先按路线顺序排";}
+  }else if(!gotFix){
+    document.getElementById("nearSt").textContent="定位信号弱，再等等…";
+  }
+}
+function startWatch(){
+  if(!navigator.geolocation){paintNear(null);document.getElementById("nearSt").textContent="这个浏览器拿不到定位，先按路线顺序排";return;}
+  if(watchId!==null)return;
+  if(!gotFix)document.getElementById("nearSt").textContent="定位中…";
+  watchId=navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
+}
+function stopWatch(){
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  setLive(false);
 }
 paintNear(null);
-document.getElementById("nearBtn").onclick=locate;
-document.querySelector('.tabs [data-page="near"]').addEventListener("click",locate);
+document.getElementById("nearBtn").onclick=()=>{stopWatch();lastHere=null;startWatch();};
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  if(b.dataset.page==="near")startWatch();else stopWatch();
+}));
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)stopWatch();else if(nearOn())startWatch();
+});
 </script>
 </body>
 </html>
