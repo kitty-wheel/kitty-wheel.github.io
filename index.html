@@ -504,13 +504,15 @@ document.querySelectorAll(".tabs button").forEach(b=>{
 /* ========== 附近收藏 ========== */
 /* 坐标用高德（GCJ-02）；手机定位是 WGS-84，先转成高德坐标再算距离 */
 /* area = 片区，挨在一起的点标同一个片区；片区按 AREAS 的顺序作为没定位时的默认顺序 */
-const AREAS=["南湖","子城","月河"];
+const AREAS=["南湖","子城","月河","常州测试"];
 const PLACES=[
   {name:"南湖天地",area:"南湖",tag:"吃",lat:30.7575,lng:120.7565,note:"湖边商场，吃午饭的地方。"},
   {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"玩",lat:30.755347,lng:120.759868,note:"坐船上岛看红船和烟雨楼，船要过安检。"},
   {name:"子城遗址公园",short:"子城",area:"子城",tag:"玩",lat:30.760008,lng:120.753163,note:"免费，可以上城墙，草坪能坐一会儿。"},
   {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"玩",lat:30.761275,lng:120.75138,note:"子城旁边的老教堂，外面拍照好看。"},
-  {name:"月河历史街区",short:"月河",area:"月河",tag:"吃·玩",lat:30.7706107,lng:120.7502502,note:"晚饭 + 夜景，小吃很多。"}
+  {name:"月河历史街区",short:"月河",area:"月河",tag:"吃·玩",lat:30.7706107,lng:120.7502502,note:"晚饭 + 夜景，小吃很多。"},
+  /* 测试用，嘉兴回来可以删 */
+  {name:"飞龙吾悦广场",short:"吾悦",area:"常州测试",tag:"测试",lat:31.78101,lng:119.94953,note:"测试点：在常州看看附近功能好不好用。"}
 ];
 PLACES.forEach((p,i)=>p.id="plc"+i);
 function wgs2gcj(lat,lng){
@@ -549,10 +551,13 @@ function jumpTo(id){
   el.scrollIntoView({block:"center"});
   el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),900);
 }
+const REGION=20000; /* 小图只画锚点 20 公里内的点，避免两个城市挤在一张图里 */
 function paintMap(here,nearestId){
   const svg=document.getElementById("nearMap");svg.innerHTML="";
   const W=340,H=300,PAD=34;
-  const pts=PLACES.map(p=>[p.lat,p.lng]);
+  const anchor=here||[PLACES[0].lat,PLACES[0].lng];
+  const SHOW=PLACES.filter(p=>dist(anchor[0],anchor[1],p.lat,p.lng)<REGION);
+  const pts=SHOW.map(p=>[p.lat,p.lng]);
   if(here)pts.push(here);
   /* 以所有点的中心为原点，换算成米，再按比例塞进画框 */
   const las=pts.map(p=>p[0]),los=pts.map(p=>p[1]);
@@ -560,20 +565,21 @@ function paintMap(here,nearestId){
   const kx=111320*Math.cos(la0*Math.PI/180),ky=110540;
   const xy=([la,lo])=>[(lo-lo0)*kx,(la-la0)*ky];
   const m=pts.map(xy);
-  const spanX=Math.max(...m.map(p=>Math.abs(p[0])))||1,spanY=Math.max(...m.map(p=>Math.abs(p[1])))||1;
+  const spanX=Math.max(300,...m.map(p=>Math.abs(p[0]))),spanY=Math.max(300,...m.map(p=>Math.abs(p[1])));
   const s=Math.min((W/2-PAD)/spanX,(H/2-PAD)/spanY);
   const P=ll=>{const [x,y]=xy(ll);return [W/2+x*s,H/2-y*s];};
   /* 片区圈 */
   AREAS.forEach(a=>{
-    const ps=PLACES.filter(p=>p.area===a).map(p=>P([p.lat,p.lng]));
+    const ps=SHOW.filter(p=>p.area===a).map(p=>P([p.lat,p.lng]));
+    if(!ps.length)return;
     const cx=ps.reduce((t,p)=>t+p[0],0)/ps.length,cy=ps.reduce((t,p)=>t+p[1],0)/ps.length;
     const r=Math.max(...ps.map(p=>Math.hypot(p[0]-cx,p[1]-cy)))+16;
     svg.appendChild(svgEl("circle",{cx,cy,r,fill:"none",stroke:"#bdbdbd","stroke-width":1.5,"stroke-dasharray":"4 4"}));
   });
   /* 收藏点：名字放在远离片区中心的一侧 */
-  PLACES.forEach(p=>{
+  SHOW.forEach(p=>{
     const [x,y]=P([p.lat,p.lng]);
-    const grp=PLACES.filter(q=>q.area===p.area).map(q=>P([q.lat,q.lng]));
+    const grp=SHOW.filter(q=>q.area===p.area).map(q=>P([q.lat,q.lng]));
     const gx=grp.reduce((t,q)=>t+q[0],0)/grp.length;
     const left=grp.length>1?x<gx:x>W-90;
     const top=p.id===nearestId;
