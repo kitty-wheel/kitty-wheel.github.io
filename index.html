@@ -133,6 +133,38 @@
     font-family:inherit;font-size:13px;font-weight:600;letter-spacing:1px;color:var(--ink2);padding:10px;}
   .rps-f .primary{background:var(--red);border-color:var(--red);color:#fff;}
   .rps-f button:disabled{opacity:.35;}
+
+  /* ===== 附近收藏 ===== */
+  .near{width:min(92vw,380px);}
+  .near-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .near-h{font-size:12px;letter-spacing:2px;color:#8a8a8a;}
+  .near-top button{border:1.5px solid var(--ink);background:none;border-radius:999px;
+    font-family:inherit;font-size:12px;font-weight:600;letter-spacing:1px;color:var(--ink2);padding:6px 14px;}
+  .near-top button:active{transform:scale(.95);}
+  .near-st{font-size:13px;letter-spacing:1px;margin:10px 0 16px;min-height:20px;color:var(--ink2);}
+  .near-st b{color:var(--red);}
+  .nmap{border:2.5px solid var(--ink);border-radius:16px;padding:6px;margin-bottom:18px;}
+  .nmap svg{display:block;width:100%;height:auto;}
+  .nmap .pt{cursor:pointer;}
+  .area{margin-bottom:16px;}
+  .area-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    font-size:12px;letter-spacing:2px;color:#8a8a8a;border-bottom:1px dashed #d8d8d8;padding-bottom:6px;margin-bottom:10px;}
+  .area-h b{font-size:14px;color:var(--ink2);letter-spacing:2px;}
+  .area-h span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .area.top .area-h b,.area.top .area-h span:last-child{color:var(--red);}
+  .plc{border:2px solid #d4d4d4;border-radius:16px;padding:13px 14px;margin-bottom:10px;scroll-margin:20px;}
+  .plc.top{border:2.5px solid var(--red);}
+  .plc.flash{border-color:var(--ink);}
+  .plc-r1{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .plc-nm{font-size:16px;font-weight:700;letter-spacing:1px;}
+  .plc-tag{font-size:11px;letter-spacing:1px;color:#8a8a8a;border:1px solid #d4d4d4;border-radius:999px;
+    padding:0 7px;margin-left:6px;vertical-align:2px;font-weight:500;}
+  .plc-d{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .plc.top .plc-d{color:var(--red);}
+  .plc-nt{font-size:13px;color:#6a6a6a;margin:5px 0 10px;line-height:1.5;}
+  .plc a{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:5px 14px;
+    font-size:12px;font-weight:600;letter-spacing:1px;color:var(--ink2);text-decoration:none;}
+  .plc a:active{transform:scale(.95);}
 </style>
 </head>
 <body>
@@ -235,9 +267,22 @@
   </div>
 </div>
 
+<div class="page" id="page-near">
+  <div class="near">
+    <div class="near-top">
+      <div class="near-h">附近收藏</div>
+      <button id="nearBtn">刷新位置</button>
+    </div>
+    <div class="near-st" id="nearSt"></div>
+    <div class="nmap"><svg viewBox="0 0 340 300" id="nearMap"></svg></div>
+    <div id="nearList"></div>
+  </div>
+</div>
+
 <nav class="tabs">
   <button data-page="wheel" class="on">转盘</button>
   <button data-page="game">对战</button>
+  <button data-page="near">附近</button>
 </nav>
 
 <script>
@@ -455,7 +500,167 @@ document.querySelectorAll(".tabs button").forEach(b=>{
     window.scrollTo(0,0);
   };
 });
-renderTopics();
+
+/* ========== 附近收藏 ========== */
+/* 坐标用高德（GCJ-02）；手机定位是 WGS-84，先转成高德坐标再算距离 */
+/* area = 片区，挨在一起的点标同一个片区；片区按 AREAS 的顺序作为没定位时的默认顺序 */
+const AREAS=["南湖","子城","月河"];
+const PLACES=[
+  {name:"南湖天地",area:"南湖",tag:"吃",lat:30.7575,lng:120.7565,note:"湖边商场，吃午饭的地方。"},
+  {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"玩",lat:30.755347,lng:120.759868,note:"坐船上岛看红船和烟雨楼，船要过安检。"},
+  {name:"子城遗址公园",short:"子城",area:"子城",tag:"玩",lat:30.760008,lng:120.753163,note:"免费，可以上城墙，草坪能坐一会儿。"},
+  {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"玩",lat:30.761275,lng:120.75138,note:"子城旁边的老教堂，外面拍照好看。"},
+  {name:"月河历史街区",short:"月河",area:"月河",tag:"吃·玩",lat:30.7706107,lng:120.7502502,note:"晚饭 + 夜景，小吃和酒吧都有。"}
+];
+PLACES.forEach((p,i)=>p.id="plc"+i);
+function wgs2gcj(lat,lng){
+  const a=6378245,ee=0.00669342162296594323,PI=Math.PI;
+  const tl=(x,y)=>{let r=-100+2*x+3*y+.2*y*y+.1*x*y+.2*Math.sqrt(Math.abs(x));
+    r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;r+=(20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;
+    r+=(160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3;return r;};
+  const tg=(x,y)=>{let r=300+x+2*y+.1*x*x+.1*x*y+.1*Math.sqrt(Math.abs(x));
+    r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;r+=(20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;
+    r+=(150*Math.sin(x/12*PI)+300*Math.sin(x/30*PI))*2/3;return r;};
+  let dLat=tl(lng-105,lat-35),dLng=tg(lng-105,lat-35);
+  const rad=lat/180*PI;let m=Math.sin(rad);m=1-ee*m*m;const sm=Math.sqrt(m);
+  dLat=dLat*180/((a*(1-ee))/(m*sm)*PI);dLng=dLng*180/(a/sm*Math.cos(rad)*PI);
+  return [lat+dLat,lng+dLng];
+}
+function dist(la1,lo1,la2,lo2){
+  const R=6371000,r=Math.PI/180,dl=(la2-la1)*r,dg=(lo2-lo1)*r;
+  const h=Math.sin(dl/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dg/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+const fmtD=m=>m<1000?Math.round(m/10)*10+" 米":(m<100000?(m/1000).toFixed(1):Math.round(m/1000))+" 公里";
+/* 方位：北朝上，8 个方向 */
+function dirOf(la1,lo1,la2,lo2){
+  const dx=(lo2-lo1)*Math.cos(la1*Math.PI/180),dy=la2-la1;
+  const deg=(Math.atan2(dx,dy)*180/Math.PI+360)%360;
+  return ["北","东北","东","东南","南","西南","西","西北"][Math.round(deg/45)%8];
+}
+const FAR=15000; /* 离收藏点都超过 15 公里，就不在小图上画自己 */
+function svgEl(tag,attrs,text){
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs)e.setAttribute(k,attrs[k]);
+  if(text!=null)e.textContent=text;return e;
+}
+function jumpTo(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.scrollIntoView({block:"center"});
+  el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),900);
+}
+function paintMap(here,nearestId){
+  const svg=document.getElementById("nearMap");svg.innerHTML="";
+  const W=340,H=300,PAD=34;
+  const pts=PLACES.map(p=>[p.lat,p.lng]);
+  if(here)pts.push(here);
+  /* 以所有点的中心为原点，换算成米，再按比例塞进画框 */
+  const las=pts.map(p=>p[0]),los=pts.map(p=>p[1]);
+  const la0=(Math.min(...las)+Math.max(...las))/2,lo0=(Math.min(...los)+Math.max(...los))/2;
+  const kx=111320*Math.cos(la0*Math.PI/180),ky=110540;
+  const xy=([la,lo])=>[(lo-lo0)*kx,(la-la0)*ky];
+  const m=pts.map(xy);
+  const spanX=Math.max(...m.map(p=>Math.abs(p[0])))||1,spanY=Math.max(...m.map(p=>Math.abs(p[1])))||1;
+  const s=Math.min((W/2-PAD)/spanX,(H/2-PAD)/spanY);
+  const P=ll=>{const [x,y]=xy(ll);return [W/2+x*s,H/2-y*s];};
+  /* 片区圈 */
+  AREAS.forEach(a=>{
+    const ps=PLACES.filter(p=>p.area===a).map(p=>P([p.lat,p.lng]));
+    const cx=ps.reduce((t,p)=>t+p[0],0)/ps.length,cy=ps.reduce((t,p)=>t+p[1],0)/ps.length;
+    const r=Math.max(...ps.map(p=>Math.hypot(p[0]-cx,p[1]-cy)))+16;
+    svg.appendChild(svgEl("circle",{cx,cy,r,fill:"none",stroke:"#bdbdbd","stroke-width":1.5,"stroke-dasharray":"4 4"}));
+  });
+  /* 收藏点：名字放在远离片区中心的一侧 */
+  PLACES.forEach(p=>{
+    const [x,y]=P([p.lat,p.lng]);
+    const grp=PLACES.filter(q=>q.area===p.area).map(q=>P([q.lat,q.lng]));
+    const gx=grp.reduce((t,q)=>t+q[0],0)/grp.length;
+    const left=grp.length>1?x<gx:x>W-90;
+    const top=p.id===nearestId;
+    const g=svgEl("g",{class:"pt"});
+    g.appendChild(svgEl("circle",{cx:x,cy:y,r:6,fill:"#fff",stroke:top?"var(--red)":"var(--ink)","stroke-width":2.5}));
+    g.appendChild(svgEl("text",{x:left?x-10:x+10,y:y+4,"text-anchor":left?"end":"start","font-size":12,
+      "font-weight":top?700:500,fill:top?"var(--red)":"var(--ink2)","font-family":"-apple-system,PingFang SC,sans-serif"},p.short||p.name));
+    g.addEventListener("click",()=>jumpTo(p.id));
+    svg.appendChild(g);
+  });
+  /* 自己的位置 */
+  if(here){
+    const [x,y]=P(here);
+    svg.appendChild(svgEl("circle",{cx:x,cy:y,r:11,fill:"none",stroke:"var(--red)","stroke-width":1.5,opacity:.5}));
+    svg.appendChild(svgEl("circle",{cx:x,cy:y,r:5,fill:"var(--red)"}));
+    svg.appendChild(svgEl("circle",{cx:W-70,cy:H-18,r:4,fill:"var(--red)"}));
+    svg.appendChild(svgEl("text",{x:W-60,y:H-14,"font-size":10,fill:"#8a8a8a"},"你的位置"));
+  }
+  /* 指北 + 比例尺 */
+  svg.appendChild(svgEl("path",{d:"M318 30 L318 12 M312 19 L318 12 L324 19",stroke:"var(--ink)","stroke-width":1.8,fill:"none","stroke-linecap":"round"}));
+  svg.appendChild(svgEl("text",{x:318,y:44,"text-anchor":"middle","font-size":10,fill:"#8a8a8a"},"北"));
+  const nice=[50,100,200,250,500,1000,2000,5000].find(v=>v*s>=50)||5000;
+  svg.appendChild(svgEl("line",{x1:14,y1:H-14,x2:14+nice*s,y2:H-14,stroke:"#8a8a8a","stroke-width":2}));
+  svg.appendChild(svgEl("text",{x:14+nice*s/2,y:H-20,"text-anchor":"middle","font-size":10,fill:"#8a8a8a"},nice<1000?nice+" 米":nice/1000+" 公里"));
+}
+function paintNear(here){
+  let list=PLACES.map(p=>({...p,d:here?dist(here[0],here[1],p.lat,p.lng):null}));
+  if(here)list.sort((x,y)=>x.d-y.d);
+  const far=here&&list[0].d>FAR;
+  const nearestId=here&&!far?list[0].id:null;
+  paintMap(far?null:here,nearestId);
+  /* 片区排序：有定位按片区里最近那个点的距离，没定位按 AREAS 顺序 */
+  const groups=AREAS.map(a=>({a,ps:list.filter(p=>p.area===a)}));
+  if(here)groups.sort((x,y)=>x.ps[0].d-y.ps[0].d);
+  const box=document.getElementById("nearList");box.innerHTML="";
+  groups.forEach((g,gi)=>{
+    const sec=document.createElement("div");
+    sec.className="area"+(nearestId&&gi===0?" top":"");
+    const h=document.createElement("div");h.className="area-h";
+    const l=document.createElement("span");
+    const b=document.createElement("b");b.textContent=g.a+"这片";
+    l.append(b," · "+g.ps.length+" 个点");
+    const r=document.createElement("span");
+    if(here&&!far){const f=g.ps[0];r.textContent=dirOf(here[0],here[1],f.lat,f.lng)+" "+fmtD(f.d);}
+    h.append(l,r);sec.appendChild(h);
+    g.ps.forEach(p=>sec.appendChild(card(p,p.id===nearestId,here&&!far)));
+    box.appendChild(sec);
+  });
+  const st=document.getElementById("nearSt");st.innerHTML="";
+  if(far){
+    st.textContent="离这些收藏还有 "+fmtD(list[0].d)+"，到了再刷新";
+  }else if(here){
+    const f=list[0];
+    st.append("离你最近：");const b=document.createElement("b");b.textContent=f.name;st.append(b," · "+fmtD(f.d));
+  }
+}
+function card(p,top,showD){
+    const el=document.createElement("div");
+    el.id=p.id;
+    el.className="plc"+(top?" top":"");
+    const url="https://uri.amap.com/marker?position="+p.lng+","+p.lat+"&name="+encodeURIComponent(p.name)+"&src=kittywheel&coordinate=gaode&callnative=1";
+    el.innerHTML='<div class="plc-r1"><div class="plc-nm"></div><div class="plc-d"></div></div><div class="plc-nt"></div><a target="_blank" rel="noopener">高德打开</a>';
+    el.querySelector(".plc-nm").textContent=p.name;
+    const tag=document.createElement("span");tag.className="plc-tag";tag.textContent=p.tag;
+    el.querySelector(".plc-nm").appendChild(tag);
+    el.querySelector(".plc-d").textContent=showD?fmtD(p.d):"";
+    el.querySelector(".plc-nt").textContent=p.note;
+    el.querySelector("a").href=url;
+    return el;
+}
+let locating=false;
+function locate(){
+  const st=document.getElementById("nearSt");
+  if(!navigator.geolocation){paintNear(null);st.textContent="这个浏览器拿不到定位，先按路线顺序排";return;}
+  if(locating)return;locating=true;
+  st.textContent="定位中…";
+  navigator.geolocation.getCurrentPosition(pos=>{
+    locating=false;
+    paintNear(wgs2gcj(pos.coords.latitude,pos.coords.longitude));
+  },()=>{
+    locating=false;
+    paintNear(null);st.textContent="定位没打开，先按路线顺序排";
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
+}
+paintNear(null);
+document.getElementById("nearBtn").onclick=locate;
+document.querySelector('.tabs [data-page="near"]').addEventListener("click",locate);
 </script>
 </body>
 </html>
