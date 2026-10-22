@@ -30,6 +30,12 @@
   .cdown{margin-top:10px;font-size:14px;font-weight:500;letter-spacing:1px;color:var(--red);
     font-variant-numeric:tabular-nums;}
   .cdown:empty{display:none;}
+  .cdown{position:relative;cursor:pointer;user-select:none;-webkit-user-select:none;}
+  .cdown .t{display:inline-block;}
+  .cdown.rush .t{color:var(--ink2);}
+  .rush-tip{height:18px;margin-top:6px;font-size:12px;letter-spacing:2px;color:#8a8a8a;
+    opacity:0;transition:opacity .25s;}
+  .rush-tip.on{opacity:1;}
   /* 地名字体：汉仪时光体，只截取了要用到的几个字，换地名要重新截取 place.woff2 */
   @font-face{font-family:"PlaceFont";src:url("place.woff2") format("woff2");font-display:swap;}
   .cd-place{color:var(--ink2);font-family:"PlaceFont",-apple-system,"PingFang SC",sans-serif;font-size:19px;}
@@ -180,6 +186,7 @@
   <h1>今天吃什么喵</h1>
   <div class="sub" id="sub">TAP TO SPIN</div>
   <div class="cdown" id="cdown"></div>
+  <div class="rush-tip" id="rushTip"></div>
 </header>
 
 <div class="stage">
@@ -700,16 +707,46 @@ document.addEventListener("visibilitychange",()=>{
 const MEET=new Date(2026,9,24,9,30);
 const MEET_PLACE="嘉兴";
 (function(){
-  const el=document.getElementById("cdown");
+  const el=document.getElementById("cdown"),tip=document.getElementById("rushTip");
+  const p=n=>String(n).padStart(2,"0");
+  const fmt=t=>p(Math.floor(t/3600))+":"+p(Math.floor(t%3600/60))+":"+p(t%60);
+  el.innerHTML='<span class="cd-place"></span><span class="t"></span>';
+  el.firstChild.textContent=MEET_PLACE+" · ";
+  const tEl=el.lastChild;
+  let rushing=false;
+  const left=()=>Math.ceil((MEET-new Date())/1000);
   function tick(){
-    const ms=MEET-new Date();
-    if(ms<=0){el.textContent="";return;}
-    const t=Math.ceil(ms/1000),p=n=>String(n).padStart(2,"0");
-    el.innerHTML='<span class="cd-place"></span>'+p(Math.floor(t/3600))+":"+p(Math.floor(t%3600/60))+":"+p(t%60);
-    el.firstChild.textContent=MEET_PLACE+" · ";
+    const t=left();
+    if(t<=0){el.textContent="";tip.textContent="";return;}
+    if(!rushing)tEl.textContent=fmt(t);
     setTimeout(tick,1000-Date.now()%1000+20);
   }
   tick();
+
+  /* 点一下＝催一下：时间往前狂奔，然后被弹回来 */
+  const TIPS=["快进失败喵","时间不听你的","再催也要等到周六","已经在快了","秒针被你催得好累","收到，马上见"];
+  let n=0;try{n=+localStorage.getItem("kw_rush")||0;}catch(e){}
+  let tipT=0;
+  el.addEventListener("click",()=>{
+    if(rushing||left()<=0)return;
+    rushing=true;el.classList.add("rush");
+    n++;try{localStorage.setItem("kw_rush",n);}catch(e){}
+    if(navigator.vibrate)navigator.vibrate(15);
+    const real=left(),jump=Math.min(real-1,Math.floor(real*0.6)),t0=performance.now(),D=650;
+    (function run(now){
+      const k=Math.min(1,(now-t0)/D),e=k*k;            /* 越跑越快 */
+      tEl.textContent=fmt(real-Math.floor(jump*e));
+      if(k<1){requestAnimationFrame(run);return;}
+      setTimeout(()=>{                                  /* 停一下，再弹回真实时间 */
+        tEl.textContent=fmt(left());
+        el.classList.remove("rush");rushing=false;
+        if(navigator.vibrate)navigator.vibrate([10,40,10]);
+        tip.textContent=TIPS[(n-1)%TIPS.length]+" · 已催 "+n+" 次";
+        tip.classList.add("on");clearTimeout(tipT);
+        tipT=setTimeout(()=>tip.classList.remove("on"),2200);
+      },220);
+    })(t0);
+  });
 })();
 </script>
 </body>
