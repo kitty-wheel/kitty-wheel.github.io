@@ -740,7 +740,7 @@ const MEET_PLACE="嘉兴";
         tEl.textContent=fmt(left());
         el.classList.remove("rush");rushing=false;
         if(navigator.vibrate)navigator.vibrate([10,40,10]);
-        tip.textContent="心急如焚焚焚 +1";
+        tip.textContent="心急如焚焚焚 +"+n;
         tip.classList.add("on");clearTimeout(tipT);
         tipT=setTimeout(()=>tip.classList.remove("on"),2200);
       },220);
