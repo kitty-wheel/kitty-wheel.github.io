@@ -28,8 +28,7 @@
   h1{font-size:22px;font-weight:600;letter-spacing:3px;color:var(--ink2);}
   .sub{font-size:11px;letter-spacing:3px;color:var(--red);margin-top:8px;}
   .cdown{display:inline-block;margin-top:12px;border:1.5px dashed var(--red);border-radius:999px;padding:5px 14px;
-    font-size:12px;letter-spacing:2px;color:var(--ink2);font-variant-numeric:tabular-nums;}
-  .cdown b{color:var(--red);font-weight:700;}
+    font-size:15px;font-weight:700;letter-spacing:2px;color:var(--red);font-variant-numeric:tabular-nums;}
   .cdown:empty{display:none;}
 
   .stage{position:relative;width:min(86vw,340px);margin-top:26px;}
@@ -701,9 +700,9 @@ const MEET=new Date(2026,9,24,9,30);
   function tick(){
     const ms=MEET-new Date();
     if(ms<=0){el.textContent="";return;}
-    const m=Math.ceil(ms/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;
-    el.innerHTML="距离见面 "+(d?"<b>"+d+"</b> 天 ":"")+"<b>"+h+"</b> 时 <b>"+mm+"</b> 分";
-    setTimeout(tick,60000-Date.now()%60000+50);
+    const t=Math.ceil(ms/1000),d=Math.floor(t/86400),p=n=>String(n).padStart(2,"0");
+    el.textContent=(d?d+" · ":"")+p(Math.floor(t%86400/3600))+":"+p(Math.floor(t%3600/60))+":"+p(t%60);
+    setTimeout(tick,1000-Date.now()%1000+20);
   }
   tick();
 })();
