@@ -30,7 +30,9 @@
   .cdown{margin-top:10px;font-size:14px;font-weight:500;letter-spacing:1px;color:var(--red);
     font-variant-numeric:tabular-nums;}
   .cdown:empty{display:none;}
-  .cd-place{color:var(--ink2);}
+  /* 地名字体：汉仪时光体，只截取了要用到的几个字，换地名要重新截取 place.woff2 */
+  @font-face{font-family:"PlaceFont";src:url("place.woff2") format("woff2");font-display:swap;}
+  .cd-place{color:var(--ink2);font-family:"PlaceFont",-apple-system,"PingFang SC",sans-serif;font-size:19px;}
 
   .stage{position:relative;width:min(86vw,340px);margin-top:26px;}
   .stage svg{display:block;width:100%;height:auto;overflow:visible;}
