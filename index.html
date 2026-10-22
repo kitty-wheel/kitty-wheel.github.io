@@ -724,7 +724,6 @@ const MEET_PLACE="嘉兴";
   tick();
 
   /* 点一下＝催一下：时间往前狂奔，然后被弹回来 */
-  const TIPS=["快进失败喵","时间不听你的","再催也要等到周六","已经在快了","秒针被你催得好累","收到，马上见"];
   let n=0;try{n=+localStorage.getItem("kw_rush")||0;}catch(e){}
   let tipT=0;
   el.addEventListener("click",()=>{
@@ -741,7 +740,7 @@ const MEET_PLACE="嘉兴";
         tEl.textContent=fmt(left());
         el.classList.remove("rush");rushing=false;
         if(navigator.vibrate)navigator.vibrate([10,40,10]);
-        tip.textContent=TIPS[(n-1)%TIPS.length]+" · 已催 "+n+" 次";
+        tip.textContent="已催 "+n+" 次";
         tip.classList.add("on");clearTimeout(tipT);
         tipT=setTimeout(()=>tip.classList.remove("on"),2200);
       },220);
