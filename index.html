@@ -27,6 +27,10 @@
   header{text-align:center;}
   h1{font-size:22px;font-weight:600;letter-spacing:3px;color:var(--ink2);}
   .sub{font-size:11px;letter-spacing:3px;color:var(--red);margin-top:8px;}
+  .cdown{display:inline-block;margin-top:12px;border:1.5px dashed var(--red);border-radius:999px;padding:5px 14px;
+    font-size:12px;letter-spacing:2px;color:var(--ink2);font-variant-numeric:tabular-nums;}
+  .cdown b{color:var(--red);font-weight:700;}
+  .cdown:empty{display:none;}
 
   .stage{position:relative;width:min(86vw,340px);margin-top:26px;}
   .stage svg{display:block;width:100%;height:auto;overflow:visible;}
@@ -173,6 +177,7 @@
 <header>
   <h1>今天吃什么喵</h1>
   <div class="sub" id="sub">TAP TO SPIN</div>
+  <div class="cdown" id="cdown"></div>
 </header>
 
 <div class="stage">
@@ -687,6 +692,21 @@ document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden)stopWatch();else if(nearOn())startWatch();
 });
+
+/* ========== 见面倒计时 ========== */
+/* 改下次见面时间只改这一行：月份从 0 开始，9 = 10月；过了时间自动隐藏 */
+const MEET=new Date(2026,9,24,9,30);
+(function(){
+  const el=document.getElementById("cdown");
+  function tick(){
+    const ms=MEET-new Date();
+    if(ms<=0){el.textContent="";return;}
+    const m=Math.ceil(ms/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;
+    el.innerHTML="距离见面 "+(d?"<b>"+d+"</b> 天 ":"")+"<b>"+h+"</b> 时 <b>"+mm+"</b> 分";
+    setTimeout(tick,60000-Date.now()%60000+50);
+  }
+  tick();
+})();
 </script>
 </body>
 </html>
