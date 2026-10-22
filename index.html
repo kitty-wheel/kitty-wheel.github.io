@@ -30,6 +30,7 @@
   .cdown{display:inline-block;margin-top:12px;border:1.5px dashed var(--red);border-radius:999px;padding:5px 14px;
     font-size:15px;font-weight:700;letter-spacing:2px;color:var(--red);font-variant-numeric:tabular-nums;}
   .cdown:empty{display:none;}
+  .cd-place{color:var(--ink2);}
 
   .stage{position:relative;width:min(86vw,340px);margin-top:26px;}
   .stage svg{display:block;width:100%;height:auto;overflow:visible;}
@@ -695,13 +696,15 @@ document.addEventListener("visibilitychange",()=>{
 /* ========== 见面倒计时 ========== */
 /* 改下次见面时间只改这一行：月份从 0 开始，9 = 10月；过了时间自动隐藏 */
 const MEET=new Date(2026,9,24,9,30);
+const MEET_PLACE="嘉兴";
 (function(){
   const el=document.getElementById("cdown");
   function tick(){
     const ms=MEET-new Date();
     if(ms<=0){el.textContent="";return;}
-    const t=Math.ceil(ms/1000),d=Math.floor(t/86400),p=n=>String(n).padStart(2,"0");
-    el.textContent=(d?d+" · ":"")+p(Math.floor(t%86400/3600))+":"+p(Math.floor(t%3600/60))+":"+p(t%60);
+    const t=Math.ceil(ms/1000),p=n=>String(n).padStart(2,"0");
+    el.innerHTML='<span class="cd-place"></span>'+p(Math.floor(t/3600))+":"+p(Math.floor(t%3600/60))+":"+p(t%60);
+    el.firstChild.textContent=MEET_PLACE+" · ";
     setTimeout(tick,1000-Date.now()%1000+20);
   }
   tick();
