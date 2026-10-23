@@ -177,6 +177,15 @@
   .plc a{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:5px 14px;
     font-size:12px;font-weight:600;letter-spacing:1px;color:var(--ink2);text-decoration:none;}
   .plc a:active{transform:scale(.95);}
+  .plc-st{font-size:12px;letter-spacing:1px;color:#6a6a6a;margin:-4px 0 10px;}
+  .plc-st.warn{color:var(--red);font-weight:700;}
+  .plc-st.off{color:#a8a8a8;}
+  .plc-btns{display:flex;gap:8px;}
+  .plc .seen{border:1.5px solid #d4d4d4;border-radius:999px;background:none;padding:5px 14px;
+    font-family:inherit;font-size:12px;font-weight:600;letter-spacing:1px;color:#8a8a8a;}
+  .plc .seen:active{transform:scale(.95);}
+  .plc.visited{opacity:.45;}
+  .plc.visited .seen{border-color:var(--ink);color:var(--ink2);}
 </style>
 </head>
 <body>
@@ -520,15 +529,15 @@ document.querySelectorAll(".tabs button").forEach(b=>{
 /* area = 片区，挨在一起的点标同一个片区；片区按 AREAS 的顺序作为没定位时的默认顺序 */
 /* area = 片区，挨在一起的点标同一个片区；AREAS 的顺序是没定位时的默认顺序
    小图只画离你 2.5 公里内的点，远的只在列表里显示距离和方向 */
-const AREAS=["南湖","子城","梅湾","人民公园","月河","城西","城东","城南","城北","湘家荡","梅花洲","常州测试"];
+const AREAS=["南湖","子城","梅湾","人民公园","月河","城西","城东","城南","城北","湘家荡","梅花洲"];
 const AREA_TITLE={};
 const PLACES=[
-  {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"景点",lat:30.755347,lng:120.759868,note:"红船、烟雨楼，坐船上岛。南湖景区夏季 8:00–17:00，冬季 8:00–16:30。"},
+  {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"景点",lat:30.755347,lng:120.759868,hours:["8:00","16:30"],note:"红船、烟雨楼，坐船上岛。南湖景区夏季 8:00–17:00，冬季 8:00–16:30。"},
   {name:"壕股塔",area:"南湖",tag:"景点",lat:30.754123,lng:120.753867,note:"南湖边的古塔。"},
   {name:"揽秀园",area:"南湖",tag:"景点",lat:30.752449,lng:120.753664,note:"小园林，人少。"},
   {name:"南湖天地",area:"南湖",tag:"吃的",lat:30.7575,lng:120.7565,note:"午饭和咖啡，碎银几两。"},
-  {name:"南湖革命纪念馆",short:"纪念馆",area:"南湖",tag:"博物馆",lat:30.747502,lng:120.761253,note:"9:00–17:30，免费。"},
-  {name:"嘉兴博物馆",short:"博物馆",area:"南湖",tag:"博物馆",lat:30.742,lng:120.764341,note:"9:00–17:00，周一闭馆，免费。"},
+  {name:"南湖革命纪念馆",short:"纪念馆",area:"南湖",tag:"博物馆",lat:30.747502,lng:120.761253,hours:["9:00","17:30"],note:"9:00–17:30，免费。"},
+  {name:"嘉兴博物馆",short:"博物馆",area:"南湖",tag:"博物馆",lat:30.742,lng:120.764341,hours:["9:00","17:00"],closedOn:[1],note:"9:00–17:00，周一闭馆，免费。"},
   {name:"子城遗址公园",short:"子城",area:"子城",tag:"景点",lat:30.760008,lng:120.753163,note:"古城遗址，免费，可以上城墙。"},
   {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"景点",lat:30.761275,lng:120.75138,note:"1917 年的老教堂，适合拍照。"},
   {name:"平山公园",area:"子城",tag:"公园",lat:30.763408,lng:120.752989,note:"子城北边，中山东路上的小公园。"},
@@ -548,8 +557,6 @@ const PLACES=[
   {name:"木湖森林公园",area:"城北",tag:"公园",lat:30.79628,lng:120.746744,note:"城北木湖边的岛，散步的好地方，离子城约 4 公里。"},
   {name:"湘家荡",area:"湘家荡",tag:"景点",lat:30.80164,lng:120.816872,note:"开车大约 20 分钟。"},
   {name:"梅花洲",area:"梅花洲",tag:"景点",lat:30.66839,lng:120.852319,note:"开车大约 30 分钟。"},
-  /* 测试用，嘉兴回来可以删 */
-  {name:"飞龙吾悦广场",short:"吾悦",area:"常州测试",tag:"测试",lat:31.78101,lng:119.94953,note:"测试点：在常州看看附近功能好不好用。"}
 ];
 PLACES.forEach((p,i)=>p.id="plc"+i);
 function wgs2gcj(lat,lng){
@@ -624,11 +631,12 @@ function paintMap(here,nearestId){
       if(!hit(b)){pick=[anc,tx,ty,b];break;}
     }
     const g=svgEl("g",{class:"pt"});
-    g.appendChild(svgEl("circle",{cx:x,cy:y,r:5.5,fill:"#fff",stroke:top?"var(--red)":"var(--ink)","stroke-width":2.5}));
+    const seen=isVisited(p);
+    g.appendChild(svgEl("circle",{cx:x,cy:y,r:5.5,fill:"#fff",stroke:top?"var(--red)":seen?"#c4c4c4":"var(--ink)","stroke-width":2.5}));
     if(pick){
       boxes.push(pick[3]);
       g.appendChild(svgEl("text",{x:pick[1],y:pick[2],"text-anchor":pick[0],"font-size":FS,
-        "font-weight":top?700:500,fill:top?"var(--red)":"var(--ink2)","font-family":"-apple-system,PingFang SC,sans-serif"},label));
+        "font-weight":top?700:500,fill:top?"var(--red)":seen?"#b0b0b0":"var(--ink2)","font-family":"-apple-system,PingFang SC,sans-serif"},label));
     }
     g.addEventListener("click",()=>jumpTo(p.id));
     svg.appendChild(g);
@@ -651,9 +659,9 @@ function paintMap(here,nearestId){
 }
 function paintNear(here){
   const list=PLACES.map(p=>({...p,d:here&&p.lat!=null?dist(here[0],here[1],p.lat,p.lng):null}));
-  const byD=(x,y)=>(x.d==null)-(y.d==null)||(x.d-y.d);
+  const byD=(x,y)=>isVisited(x)-isVisited(y)||(x.d==null)-(y.d==null)||(x.d-y.d);
   const ranked=list.filter(p=>p.d!=null).sort(byD);
-  const far=here&&(!ranked.length||ranked[0].d>FAR);
+  const far=here&&(!ranked.length||Math.min(...ranked.map(p=>p.d))>FAR);
   const nearestId=here&&!far?ranked[0].id:null;
   paintMap(far?null:here,nearestId);
   /* 片区排序：有定位按片区里最近那个点的距离，没定位按 AREAS 顺序；没位置的片区永远在最后 */
@@ -661,7 +669,7 @@ function paintNear(here){
   if(here){
     groups.forEach(g=>{g.ps.sort(byD);g.min=g.ps[0].d==null?Infinity:g.ps[0].d;});
     groups.sort((x,y)=>x.min-y.min);
-  }
+  }else groups.forEach(g=>g.ps.sort((x,y)=>isVisited(x)-isVisited(y)));
   const box=document.getElementById("nearList");box.innerHTML="";
   groups.forEach((g,gi)=>{
     const sec=document.createElement("div");
@@ -679,27 +687,57 @@ function paintNear(here){
   });
   const st=document.getElementById("nearSt");st.innerHTML="";
   if(far){
-    st.textContent=ranked.length?"离这些收藏还有 "+fmtD(ranked[0].d)+"，到了再刷新":"";
+    st.textContent=ranked.length?"离这些收藏还有 "+fmtD(Math.min(...ranked.map(p=>p.d)))+"，到了再刷新":"";
   }else if(here){
     const f=ranked[0];
     st.append("离你最近：");const b=document.createElement("b");b.textContent=f.name;st.append(b," · "+fmtD(f.d));
   }
 }
+/* 开放状态：hours=[开门,关门]，closedOn=[星期几闭馆，0=周日] */
+function openState(p,now){
+  if(!p.hours)return null;
+  const mins=t=>{const [h,m]=t.split(":");return h*60+ +m;};
+  const o=mins(p.hours[0]),c=mins(p.hours[1]),n=now.getHours()*60+now.getMinutes();
+  if(p.closedOn&&p.closedOn.includes(now.getDay()))return {cls:"off",txt:"今天闭馆"};
+  if(n<o)return {cls:"",txt:"还没开门 · "+p.hours[0]+" 开"};
+  if(n>=c)return {cls:"off",txt:"已关门 · 开放到 "+p.hours[1]};
+  if(c-n<=60)return {cls:"warn",txt:"还有 "+(c-n)+" 分钟关门"};
+  return {cls:"",txt:"开放中 · "+p.hours[1]+" 关门"};
+}
+/* 去过：存在本机，按地名记 */
+let visited={};try{visited=JSON.parse(localStorage.getItem("kw_visited")||"{}");}catch(e){}
+const isVisited=p=>!!visited[p.name];
+function toggleVisited(p){
+  if(visited[p.name])delete visited[p.name];else visited[p.name]=1;
+  try{localStorage.setItem("kw_visited",JSON.stringify(visited));}catch(e){}
+  const st=document.getElementById("nearSt"),keep=gotFix?null:st.textContent;
+  paintNear(gotFix?lastHere:null);
+  if(keep!==null)st.textContent=keep;
+}
 function card(p,top,showD){
     const el=document.createElement("div");
     el.id=p.id;
-    el.className="plc"+(top?" top":"");
+    el.className="plc"+(top?" top":"")+(isVisited(p)?" visited":"");
     const url=p.lat!=null
       ?"https://uri.amap.com/marker?position="+p.lng+","+p.lat+"&name="+encodeURIComponent(p.name)+"&src=kittywheel&coordinate=gaode&callnative=1"
       :"https://uri.amap.com/search?keyword="+encodeURIComponent(p.name)+"&city=330400&src=kittywheel&callnative=1";
-    el.innerHTML='<div class="plc-r1"><div class="plc-nm"></div><div class="plc-d"></div></div><div class="plc-nt"></div><a target="_blank" rel="noopener">高德打开</a>';
+    el.innerHTML='<div class="plc-r1"><div class="plc-nm"></div><div class="plc-d"></div></div><div class="plc-nt"></div>'+
+      '<div class="plc-btns"><a target="_blank" rel="noopener">高德打开</a><button class="seen"></button></div>';
     el.querySelector(".plc-nm").textContent=p.name;
     const tag=document.createElement("span");tag.className="plc-tag";tag.textContent=p.tag;
     el.querySelector(".plc-nm").appendChild(tag);
     el.querySelector(".plc-d").textContent=showD?fmtD(p.d):"";
     el.querySelector(".plc-nt").textContent=p.note;
+    const st=openState(p,new Date());
+    if(st){
+      const d=document.createElement("div");d.className="plc-st "+st.cls;d.textContent=st.txt;
+      el.querySelector(".plc-nt").after(d);
+    }
     el.querySelector("a").href=url;
     if(p.lat==null)el.querySelector("a").textContent="高德搜索";
+    const sb=el.querySelector(".seen");
+    sb.textContent=isVisited(p)?"去过 ✓":"去过";
+    sb.onclick=()=>toggleVisited(p);
     return el;
 }
 /* 停在「附近」页时持续定位，走动 10 米以上就重画；离开页面或锁屏就停 */
@@ -732,6 +770,7 @@ function stopWatch(){
   setLive(false);
 }
 paintNear(null);
+setInterval(()=>{if(nearOn())paintNear(gotFix?lastHere:null);},60000); /* 每分钟刷新开放状态 */
 document.getElementById("nearBtn").onclick=()=>{stopWatch();lastHere=null;startWatch();};
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
   if(b.dataset.page==="near")startWatch();else stopWatch();
