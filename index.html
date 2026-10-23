@@ -571,7 +571,7 @@ document.querySelectorAll(".tabs button").forEach(b=>{
 /* area = 片区，挨在一起的点标同一个片区；片区按 AREAS 的顺序作为没定位时的默认顺序 */
 /* area = 片区，挨在一起的点标同一个片区；AREAS 的顺序是没定位时的默认顺序
    小图只画离你 2.5 公里内的点，远的只在列表里显示距离和方向 */
-const AREAS=["南湖","子城","梅湾","人民公园","月河","城西","城东","城南","城北","湘家荡","梅花洲"];
+const AREAS=["南湖","子城","梅湾","人民公园","月河","城西","城东","城南","城北","湘家荡","梅花洲","常州测试"];
 const AREA_TITLE={};
 const PLACES=[
   {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"景点",lat:30.755347,lng:120.759868,hours:["8:00","16:30"],note:"红船、烟雨楼，坐船上岛。南湖景区夏季 8:00–17:00，冬季 8:00–16:30。"},
@@ -599,6 +599,8 @@ const PLACES=[
   {name:"木湖森林公园",area:"城北",tag:"公园",lat:30.79628,lng:120.746744,note:"城北木湖边的岛，散步的好地方，离子城约 4 公里。"},
   {name:"湘家荡",area:"湘家荡",tag:"景点",lat:30.80164,lng:120.816872,note:"开车大约 20 分钟。"},
   {name:"梅花洲",area:"梅花洲",tag:"景点",lat:30.66839,lng:120.852319,note:"开车大约 30 分钟。"},
+  /* 测试用，在常州试功能；坐标是钟楼区武宜北路那家，不是新北飞龙那家 */
+  {name:"飞龙吾悦广场",short:"吾悦",area:"常州测试",tag:"测试",lat:31.78101,lng:119.94953,note:"测试点：在常州看看附近功能好不好用。"},
 ];
 PLACES.forEach((p,i)=>p.id="plc"+i);
 function wgs2gcj(lat,lng){
@@ -642,7 +644,10 @@ function paintMap(here,nearestId){
   const svg=document.getElementById("nearMap");svg.innerHTML="";
   const W=340,H=340,PAD=30;
   const anchor=here||[PLACES[0].lat,PLACES[0].lng];
-  const SHOW=PLACES.filter(p=>p.lat!=null&&!p.noMap&&dist(anchor[0],anchor[1],p.lat,p.lng)<REGION);
+  /* 一般画 2.5 公里内；附近一个都没有时，放大到能看到最近的那个 */
+  const ds=PLACES.filter(p=>p.lat!=null).map(p=>dist(anchor[0],anchor[1],p.lat,p.lng));
+  const R=here?Math.max(REGION,Math.min(...ds)*1.25):REGION;
+  const SHOW=PLACES.filter(p=>p.lat!=null&&!p.noMap&&dist(anchor[0],anchor[1],p.lat,p.lng)<R);
   const pts=SHOW.map(p=>[p.lat,p.lng]);
   if(here)pts.push(here);
   /* 以所有点的中心为原点，换算成米，再按比例塞进画框 */
@@ -660,7 +665,6 @@ function paintMap(here,nearestId){
   const boxes=dots.map(d=>[d.x-6.5,d.y-6.5,d.x+6.5,d.y+6.5]);
   let youBox=null;if(here){const [x,y]=P(here);youBox=[x-12,y-12,x+12,y+12];}
   boxes.push([W-40,6,W,52],[8,H-34,110,H-6]); /* 指北、比例尺 */
-  if(here)boxes.push([W-78,H-28,W-6,H-6]);
   const hit=b=>b[0]<4||b[2]>W-4||b[1]<4||b[3]>H-4||boxes.some(o=>b[0]<o[2]&&b[2]>o[0]&&b[1]<o[3]&&b[3]>o[1]);
   dots.sort((a,b)=>(b.p.id===nearestId)-(a.p.id===nearestId));
   dots.forEach(({p,x,y})=>{
@@ -674,7 +678,7 @@ function paintMap(here,nearestId){
     }
     const g=svgEl("g",{class:"pt"});
     const seen=isVisited(p);
-    g.appendChild(svgEl("circle",{cx:x,cy:y,r:5.5,fill:"#fff",stroke:top?"var(--red)":seen?"#c4c4c4":"var(--ink)","stroke-width":2.5}));
+    g.appendChild(svgEl("circle",{cx:x,cy:y,r:5.5,fill:"#fff",stroke:seen?"#c4c4c4":"var(--ink)","stroke-width":2.5}));
     if(pick){
       boxes.push(pick[3]);
       g.appendChild(svgEl("text",{x:pick[1],y:pick[2],"text-anchor":pick[0],"font-size":FS,
@@ -689,8 +693,11 @@ function paintMap(here,nearestId){
     const [x,y]=P(here);
     svg.appendChild(svgEl("circle",{cx:x,cy:y,r:11,fill:"none",stroke:"var(--red)","stroke-width":1.5,opacity:.5}));
     svg.appendChild(svgEl("circle",{cx:x,cy:y,r:5,fill:"var(--red)"}));
-    svg.appendChild(svgEl("circle",{cx:W-70,cy:H-18,r:4,fill:"var(--red)"}));
-    svg.appendChild(svgEl("text",{x:W-60,y:H-14,"font-size":10,fill:"#8a8a8a"},"你的位置"));
+    /* 旁边写个“你”，找个不挡字的位置 */
+    const spots=[["start",x+15,y+4],["end",x-15,y+4],["middle",x,y-16],["middle",x,y+24]];
+    let sp=spots.find(([a,tx,ty])=>{const x0=a==="start"?tx:a==="end"?tx-12:tx-6;return !hit([x0,ty-11,x0+12,ty+3]);})||spots[0];
+    svg.appendChild(svgEl("text",{x:sp[1],y:sp[2],"text-anchor":sp[0],"font-size":12,"font-weight":700,fill:"var(--red)",
+      "font-family":"-apple-system,PingFang SC,sans-serif"},"你"));
   }
   /* 指北 + 比例尺 */
   svg.appendChild(svgEl("path",{d:"M318 30 L318 12 M312 19 L318 12 L324 19",stroke:"var(--ink)","stroke-width":1.8,fill:"none","stroke-linecap":"round"}));
