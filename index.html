@@ -31,6 +31,7 @@
   .cdown{margin-top:10px;font-size:14px;font-weight:500;letter-spacing:1px;color:var(--red);
     font-variant-numeric:tabular-nums;}
   .cdown:empty{display:none;}
+  .cdown.arrived{cursor:default;text-align:center;}
   .cdown{position:relative;cursor:pointer;user-select:none;-webkit-user-select:none;}
   .cdown .t{display:inline-block;}
   .cdown.rush .t{color:var(--ink2);}
@@ -905,7 +906,7 @@ const MEET_PLACE="嘉兴";
   const left=()=>Math.ceil((MEET-new Date())/1000);
   function tick(){
     const t=left();
-    if(t<=0){el.textContent="";tip.textContent="";return;}
+    if(t<=0){el.firstChild.textContent=MEET_PLACE;tEl.textContent="";tip.textContent="";el.classList.add("arrived");return;} /* 到了：只留地名，居中 */
     if(!rushing)tEl.textContent=fmt(t);
     setTimeout(tick,1000-Date.now()%1000+20);
   }
