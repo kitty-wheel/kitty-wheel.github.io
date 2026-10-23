@@ -519,8 +519,8 @@ document.querySelectorAll(".tabs button").forEach(b=>{
 /* 坐标用高德（GCJ-02）；手机定位是 WGS-84，先转成高德坐标再算距离 */
 /* area = 片区，挨在一起的点标同一个片区；片区按 AREAS 的顺序作为没定位时的默认顺序 */
 /* area = 片区，挨在一起的点标同一个片区；AREAS 的顺序是没定位时的默认顺序
-   小图只画离你 5 公里内的点，远的只在列表里显示距离和方向 */
-const AREAS=["南湖","子城","梅湾","人民公园","月河","湘家荡","梅花洲","常州测试"];
+   小图只画离你 2.5 公里内的点，远的只在列表里显示距离和方向 */
+const AREAS=["南湖","子城","梅湾","人民公园","月河","城西","城东","城南","城北","湘家荡","梅花洲","常州测试"];
 const AREA_TITLE={};
 const PLACES=[
   {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"景点",lat:30.755347,lng:120.759868,note:"红船、烟雨楼，坐船上岛。南湖景区夏季 8:00–17:00，冬季 8:00–16:30。"},
@@ -531,6 +531,7 @@ const PLACES=[
   {name:"嘉兴博物馆",short:"博物馆",area:"南湖",tag:"博物馆",lat:30.742,lng:120.764341,note:"9:00–17:00，周一闭馆，免费。"},
   {name:"子城遗址公园",short:"子城",area:"子城",tag:"景点",lat:30.760008,lng:120.753163,note:"古城遗址，免费，可以上城墙。"},
   {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"景点",lat:30.761275,lng:120.75138,note:"1917 年的老教堂，适合拍照。"},
+  {name:"平山公园",area:"子城",tag:"公园",lat:30.763408,lng:120.752989,note:"子城北边，中山东路上的小公园。"},
   {name:"五芳斋",area:"子城",tag:"吃的",lat:30.763283,lng:120.75373,note:"粽子。"},
   {name:"范蠡湖",area:"梅湾",tag:"景点",lat:30.754851,lng:120.743154,note:"安静的小湖公园，在梅湾街旁边。"},
   {name:"梅湾街",area:"梅湾",tag:"老街",lat:30.75346,lng:120.7475,note:"安静的老街。"},
@@ -540,6 +541,11 @@ const PLACES=[
   {name:"芦席汇",area:"月河",tag:"老街",lat:30.77056,lng:120.75531,note:"在月河东边，人少。"},
   {name:"粽子文化博物馆",short:"粽子馆",area:"月河",tag:"博物馆",lat:30.769913,lng:120.748797,note:"在月河里面，开放时间没查到。"},
   {name:"落帆亭",area:"月河",tag:"景点",lat:30.77557,lng:120.75597,note:"大运河边，很清静。"},
+  {name:"运河公园",area:"城西",tag:"公园",lat:30.75387,lng:120.72173,note:"城西运河边，离子城约 3 公里。"},
+  {name:"秀洲公园",area:"城西",tag:"公园",lat:30.758286,lng:120.71005,note:"中山西路上，离子城约 4 公里。"},
+  {name:"南湖区市民公园",short:"市民公园",area:"城东",tag:"公园",lat:30.74506,lng:120.78403,note:"城东，离子城约 3.4 公里。"},
+  {name:"府南公园",area:"城南",tag:"公园",lat:30.726643,lng:120.754367,note:"城南，离子城约 3.7 公里。"},
+  {name:"木湖森林公园",area:"城北",tag:"公园",lat:30.79628,lng:120.746744,note:"城北木湖边的岛，散步的好地方，离子城约 4 公里。"},
   {name:"湘家荡",area:"湘家荡",tag:"景点",lat:30.80164,lng:120.816872,note:"开车大约 20 分钟。"},
   {name:"梅花洲",area:"梅花洲",tag:"景点",lat:30.66839,lng:120.852319,note:"开车大约 30 分钟。"},
   /* 测试用，嘉兴回来可以删 */
@@ -582,7 +588,7 @@ function jumpTo(id){
   el.scrollIntoView({block:"center"});
   el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),900);
 }
-const REGION=5000; /* 小图只画离你 5 公里内的点，远的只在列表里 */
+const REGION=2500; /* 小图只画离你 2.5 公里内的点，远的只在列表里 */
 function paintMap(here,nearestId){
   const svg=document.getElementById("nearMap");svg.innerHTML="";
   const W=340,H=340,PAD=30;
