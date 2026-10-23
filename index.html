@@ -288,7 +288,7 @@
       <button id="nearBtn">刷新位置</button>
     </div>
     <div class="near-st" id="nearSt"></div>
-    <div class="nmap"><svg viewBox="0 0 340 300" id="nearMap"></svg></div>
+    <div class="nmap"><svg viewBox="0 0 340 340" id="nearMap"></svg></div>
     <div id="nearList"></div>
   </div>
 </div>
@@ -518,13 +518,30 @@ document.querySelectorAll(".tabs button").forEach(b=>{
 /* ========== 附近收藏 ========== */
 /* 坐标用高德（GCJ-02）；手机定位是 WGS-84，先转成高德坐标再算距离 */
 /* area = 片区，挨在一起的点标同一个片区；片区按 AREAS 的顺序作为没定位时的默认顺序 */
-const AREAS=["南湖","子城","月河","常州测试"];
+/* area = 片区，挨在一起的点标同一个片区；AREAS 的顺序是没定位时的默认顺序
+   小图只画离你 5 公里内的点，远的只在列表里显示距离和方向 */
+const AREAS=["南湖","子城","梅湾","人民公园","月河","湘家荡","梅花洲","常州测试"];
+const AREA_TITLE={};
 const PLACES=[
-  {name:"南湖天地",area:"南湖",tag:"吃",lat:30.7575,lng:120.7565,note:"湖边商场，吃午饭的地方。"},
-  {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"玩",lat:30.755347,lng:120.759868,note:"坐船上岛看红船和烟雨楼，船要过安检。"},
-  {name:"子城遗址公园",short:"子城",area:"子城",tag:"玩",lat:30.760008,lng:120.753163,note:"免费，可以上城墙，草坪能坐一会儿。"},
-  {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"玩",lat:30.761275,lng:120.75138,note:"子城旁边的老教堂，外面拍照好看。"},
-  {name:"月河历史街区",short:"月河",area:"月河",tag:"吃·玩",lat:30.7706107,lng:120.7502502,note:"晚饭 + 夜景，小吃很多。"},
+  {name:"南湖 · 湖心岛",short:"湖心岛",area:"南湖",tag:"景点",lat:30.755347,lng:120.759868,note:"红船、烟雨楼，坐船上岛。南湖景区夏季 8:00–17:00，冬季 8:00–16:30。"},
+  {name:"壕股塔",area:"南湖",tag:"景点",lat:30.754123,lng:120.753867,note:"南湖边的古塔。"},
+  {name:"揽秀园",area:"南湖",tag:"景点",lat:30.752449,lng:120.753664,note:"小园林，人少。"},
+  {name:"南湖天地",area:"南湖",tag:"吃的",lat:30.7575,lng:120.7565,note:"午饭和咖啡，碎银几两。"},
+  {name:"南湖革命纪念馆",short:"纪念馆",area:"南湖",tag:"博物馆",lat:30.747502,lng:120.761253,note:"9:00–17:30，免费。"},
+  {name:"嘉兴博物馆",short:"博物馆",area:"南湖",tag:"博物馆",lat:30.742,lng:120.764341,note:"9:00–17:00，周一闭馆，免费。"},
+  {name:"子城遗址公园",short:"子城",area:"子城",tag:"景点",lat:30.760008,lng:120.753163,note:"古城遗址，免费，可以上城墙。"},
+  {name:"嘉兴天主教堂",short:"天主教堂",area:"子城",tag:"景点",lat:30.761275,lng:120.75138,note:"1917 年的老教堂，适合拍照。"},
+  {name:"五芳斋",area:"子城",tag:"吃的",lat:30.763283,lng:120.75373,note:"粽子。"},
+  {name:"范蠡湖",area:"梅湾",tag:"景点",lat:30.754851,lng:120.743154,note:"安静的小湖公园，在梅湾街旁边。"},
+  {name:"梅湾街",area:"梅湾",tag:"老街",lat:30.75346,lng:120.7475,note:"安静的老街。"},
+  {name:"船文化博物馆",short:"船博物馆",area:"梅湾",tag:"博物馆",lat:30.763793,lng:120.742942,note:"开放时间没查到。"},
+  {name:"嘉兴站 · 人民公园",short:"人民公园",area:"人民公园",tag:"景点",lat:30.765947,lng:120.759387,note:"民国风格的车站，下沉式公园。"},
+  {name:"月河历史街区",short:"月河",area:"月河",tag:"老街",lat:30.7706107,lng:120.7502502,note:"小吃和夜景，晚饭可以吃邹大鲜。"},
+  {name:"芦席汇",area:"月河",tag:"老街",lat:30.77056,lng:120.75531,note:"在月河东边，人少。"},
+  {name:"粽子文化博物馆",short:"粽子馆",area:"月河",tag:"博物馆",lat:30.769913,lng:120.748797,note:"在月河里面，开放时间没查到。"},
+  {name:"落帆亭",area:"月河",tag:"景点",lat:30.77557,lng:120.75597,note:"大运河边，很清静。"},
+  {name:"湘家荡",area:"湘家荡",tag:"景点",lat:30.80164,lng:120.816872,note:"开车大约 20 分钟。"},
+  {name:"梅花洲",area:"梅花洲",tag:"景点",lat:30.66839,lng:120.852319,note:"开车大约 30 分钟。"},
   /* 测试用，嘉兴回来可以删 */
   {name:"飞龙吾悦广场",short:"吾悦",area:"常州测试",tag:"测试",lat:31.78101,lng:119.94953,note:"测试点：在常州看看附近功能好不好用。"}
 ];
@@ -565,12 +582,12 @@ function jumpTo(id){
   el.scrollIntoView({block:"center"});
   el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),900);
 }
-const REGION=20000; /* 小图只画锚点 20 公里内的点，避免两个城市挤在一张图里 */
+const REGION=5000; /* 小图只画离你 5 公里内的点，远的只在列表里 */
 function paintMap(here,nearestId){
   const svg=document.getElementById("nearMap");svg.innerHTML="";
-  const W=340,H=300,PAD=34;
+  const W=340,H=340,PAD=30;
   const anchor=here||[PLACES[0].lat,PLACES[0].lng];
-  const SHOW=PLACES.filter(p=>dist(anchor[0],anchor[1],p.lat,p.lng)<REGION);
+  const SHOW=PLACES.filter(p=>p.lat!=null&&!p.noMap&&dist(anchor[0],anchor[1],p.lat,p.lng)<REGION);
   const pts=SHOW.map(p=>[p.lat,p.lng]);
   if(here)pts.push(here);
   /* 以所有点的中心为原点，换算成米，再按比例塞进画框 */
@@ -582,27 +599,34 @@ function paintMap(here,nearestId){
   const spanX=Math.max(300,...m.map(p=>Math.abs(p[0]))),spanY=Math.max(300,...m.map(p=>Math.abs(p[1])));
   const s=Math.min((W/2-PAD)/spanX,(H/2-PAD)/spanY);
   const P=ll=>{const [x,y]=xy(ll);return [W/2+x*s,H/2-y*s];};
-  /* 片区圈 */
-  AREAS.forEach(a=>{
-    const ps=SHOW.filter(p=>p.area===a).map(p=>P([p.lat,p.lng]));
-    if(!ps.length)return;
-    const cx=ps.reduce((t,p)=>t+p[0],0)/ps.length,cy=ps.reduce((t,p)=>t+p[1],0)/ps.length;
-    const r=Math.max(...ps.map(p=>Math.hypot(p[0]-cx,p[1]-cy)))+16;
-    svg.appendChild(svgEl("circle",{cx,cy,r,fill:"none",stroke:"#bdbdbd","stroke-width":1.5,"stroke-dasharray":"4 4"}));
-  });
-  /* 收藏点：名字放在远离片区中心的一侧 */
-  SHOW.forEach(p=>{
-    const [x,y]=P([p.lat,p.lng]);
-    const grp=SHOW.filter(q=>q.area===p.area).map(q=>P([q.lat,q.lng]));
-    const gx=grp.reduce((t,q)=>t+q[0],0)/grp.length;
-    const left=grp.length>1?x<gx:x>W-90;
-    const top=p.id===nearestId;
+  /* 收藏点：先画点，再给每个名字找一个不和别的点、别的名字重叠的位置 */
+  const FS=11,CW=11; /* 字号、每个字大约宽度 */
+  const dots=SHOW.map(p=>{const [x,y]=P([p.lat,p.lng]);return {p,x,y};});
+  const boxes=dots.map(d=>[d.x-6.5,d.y-6.5,d.x+6.5,d.y+6.5]);
+  let youBox=null;if(here){const [x,y]=P(here);youBox=[x-12,y-12,x+12,y+12];}
+  boxes.push([W-40,6,W,52],[8,H-34,110,H-6]); /* 指北、比例尺 */
+  if(here)boxes.push([W-78,H-28,W-6,H-6]);
+  const hit=b=>b[0]<4||b[2]>W-4||b[1]<4||b[3]>H-4||boxes.some(o=>b[0]<o[2]&&b[2]>o[0]&&b[1]<o[3]&&b[3]>o[1]);
+  dots.sort((a,b)=>(b.p.id===nearestId)-(a.p.id===nearestId));
+  dots.forEach(({p,x,y})=>{
+    const top=p.id===nearestId,label=p.short||p.name,w=label.length*CW,h=FS+2;
+    const tries=[["start",x+9,y+4],["end",x-9,y+4],["middle",x,y-10],["middle",x,y+18]];
+    let pick=null;
+    for(const [anc,tx,ty] of tries){
+      const x0=anc==="start"?tx:anc==="end"?tx-w:tx-w/2;
+      const b=[x0-1,ty-FS,x0+w+1,ty+3];
+      if(!hit(b)){pick=[anc,tx,ty,b];break;}
+    }
     const g=svgEl("g",{class:"pt"});
-    g.appendChild(svgEl("circle",{cx:x,cy:y,r:6,fill:"#fff",stroke:top?"var(--red)":"var(--ink)","stroke-width":2.5}));
-    g.appendChild(svgEl("text",{x:left?x-10:x+10,y:y+4,"text-anchor":left?"end":"start","font-size":12,
-      "font-weight":top?700:500,fill:top?"var(--red)":"var(--ink2)","font-family":"-apple-system,PingFang SC,sans-serif"},p.short||p.name));
+    g.appendChild(svgEl("circle",{cx:x,cy:y,r:5.5,fill:"#fff",stroke:top?"var(--red)":"var(--ink)","stroke-width":2.5}));
+    if(pick){
+      boxes.push(pick[3]);
+      g.appendChild(svgEl("text",{x:pick[1],y:pick[2],"text-anchor":pick[0],"font-size":FS,
+        "font-weight":top?700:500,fill:top?"var(--red)":"var(--ink2)","font-family":"-apple-system,PingFang SC,sans-serif"},label));
+    }
     g.addEventListener("click",()=>jumpTo(p.id));
     svg.appendChild(g);
+    if(youBox){boxes.push(youBox);youBox=null;} /* 最近的那个先放好名字，再把“你”的位置挡上 */
   });
   /* 自己的位置 */
   if(here){
@@ -620,33 +644,38 @@ function paintMap(here,nearestId){
   svg.appendChild(svgEl("text",{x:14+nice*s/2,y:H-20,"text-anchor":"middle","font-size":10,fill:"#8a8a8a"},nice<1000?nice+" 米":nice/1000+" 公里"));
 }
 function paintNear(here){
-  let list=PLACES.map(p=>({...p,d:here?dist(here[0],here[1],p.lat,p.lng):null}));
-  if(here)list.sort((x,y)=>x.d-y.d);
-  const far=here&&list[0].d>FAR;
-  const nearestId=here&&!far?list[0].id:null;
+  const list=PLACES.map(p=>({...p,d:here&&p.lat!=null?dist(here[0],here[1],p.lat,p.lng):null}));
+  const byD=(x,y)=>(x.d==null)-(y.d==null)||(x.d-y.d);
+  const ranked=list.filter(p=>p.d!=null).sort(byD);
+  const far=here&&(!ranked.length||ranked[0].d>FAR);
+  const nearestId=here&&!far?ranked[0].id:null;
   paintMap(far?null:here,nearestId);
-  /* 片区排序：有定位按片区里最近那个点的距离，没定位按 AREAS 顺序 */
-  const groups=AREAS.map(a=>({a,ps:list.filter(p=>p.area===a)}));
-  if(here)groups.sort((x,y)=>x.ps[0].d-y.ps[0].d);
+  /* 片区排序：有定位按片区里最近那个点的距离，没定位按 AREAS 顺序；没位置的片区永远在最后 */
+  const groups=AREAS.map(a=>({a,ps:list.filter(p=>p.area===a)})).filter(g=>g.ps.length);
+  if(here){
+    groups.forEach(g=>{g.ps.sort(byD);g.min=g.ps[0].d==null?Infinity:g.ps[0].d;});
+    groups.sort((x,y)=>x.min-y.min);
+  }
   const box=document.getElementById("nearList");box.innerHTML="";
   groups.forEach((g,gi)=>{
     const sec=document.createElement("div");
     sec.className="area"+(nearestId&&gi===0?" top":"");
     const h=document.createElement("div");h.className="area-h";
     const l=document.createElement("span");
-    const b=document.createElement("b");b.textContent=g.a+"这片";
+    const b=document.createElement("b");b.textContent=AREA_TITLE[g.a]||g.a+"这片";
     l.append(b," · "+g.ps.length+" 个点");
     const r=document.createElement("span");
-    if(here&&!far){const f=g.ps[0];r.textContent=dirOf(here[0],here[1],f.lat,f.lng)+" "+fmtD(f.d);}
+    const f=g.ps[0];
+    if(here&&!far&&f.d!=null)r.textContent=dirOf(here[0],here[1],f.lat,f.lng)+" "+fmtD(f.d);
     h.append(l,r);sec.appendChild(h);
-    g.ps.forEach(p=>sec.appendChild(card(p,p.id===nearestId,here&&!far)));
+    g.ps.forEach(p=>sec.appendChild(card(p,p.id===nearestId,here&&!far&&p.d!=null)));
     box.appendChild(sec);
   });
   const st=document.getElementById("nearSt");st.innerHTML="";
   if(far){
-    st.textContent="离这些收藏还有 "+fmtD(list[0].d)+"，到了再刷新";
+    st.textContent=ranked.length?"离这些收藏还有 "+fmtD(ranked[0].d)+"，到了再刷新":"";
   }else if(here){
-    const f=list[0];
+    const f=ranked[0];
     st.append("离你最近：");const b=document.createElement("b");b.textContent=f.name;st.append(b," · "+fmtD(f.d));
   }
 }
@@ -654,7 +683,9 @@ function card(p,top,showD){
     const el=document.createElement("div");
     el.id=p.id;
     el.className="plc"+(top?" top":"");
-    const url="https://uri.amap.com/marker?position="+p.lng+","+p.lat+"&name="+encodeURIComponent(p.name)+"&src=kittywheel&coordinate=gaode&callnative=1";
+    const url=p.lat!=null
+      ?"https://uri.amap.com/marker?position="+p.lng+","+p.lat+"&name="+encodeURIComponent(p.name)+"&src=kittywheel&coordinate=gaode&callnative=1"
+      :"https://uri.amap.com/search?keyword="+encodeURIComponent(p.name)+"&city=330400&src=kittywheel&callnative=1";
     el.innerHTML='<div class="plc-r1"><div class="plc-nm"></div><div class="plc-d"></div></div><div class="plc-nt"></div><a target="_blank" rel="noopener">高德打开</a>';
     el.querySelector(".plc-nm").textContent=p.name;
     const tag=document.createElement("span");tag.className="plc-tag";tag.textContent=p.tag;
@@ -662,6 +693,7 @@ function card(p,top,showD){
     el.querySelector(".plc-d").textContent=showD?fmtD(p.d):"";
     el.querySelector(".plc-nt").textContent=p.note;
     el.querySelector("a").href=url;
+    if(p.lat==null)el.querySelector("a").textContent="高德搜索";
     return el;
 }
 /* 停在「附近」页时持续定位，走动 10 米以上就重画；离开页面或锁屏就停 */
