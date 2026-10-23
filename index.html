@@ -174,6 +174,7 @@
     padding:0 7px;margin-left:6px;vertical-align:2px;font-weight:500;}
   .plc-d{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
   .plc.top .plc-d{color:var(--red);}
+  .arw{display:inline-block;margin-right:5px;font-weight:700;transition:transform .15s linear;}
   .plc-nt{font-size:13px;color:#6a6a6a;margin:5px 0 10px;line-height:1.5;}
   .plc a{display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:5px 14px;
     font-size:12px;font-weight:600;letter-spacing:1px;color:var(--ink2);text-decoration:none;}
@@ -623,6 +624,10 @@ function dist(la1,lo1,la2,lo2){
 }
 const fmtD=m=>m<1000?Math.round(m/10)*10+" 米":(m<100000?(m/1000).toFixed(1):Math.round(m/1000))+" 公里";
 /* 方位：北朝上，8 个方向 */
+function bearingOf(la1,lo1,la2,lo2){
+  const dx=(lo2-lo1)*Math.cos(la1*Math.PI/180),dy=la2-la1;
+  return (Math.atan2(dx,dy)*180/Math.PI+360)%360;
+}
 function dirOf(la1,lo1,la2,lo2){
   const dx=(lo2-lo1)*Math.cos(la1*Math.PI/180),dy=la2-la1;
   const deg=(Math.atan2(dx,dy)*180/Math.PI+360)%360;
@@ -640,8 +645,11 @@ function jumpTo(id){
   el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),900);
 }
 const REGION=2500; /* 小图只画离你 2.5 公里内的点，远的只在列表里 */
+let lastMap=[null,null];
 function paintMap(here,nearestId){
+  lastMap=[here,nearestId];
   const svg=document.getElementById("nearMap");svg.innerHTML="";
+  const h=(HEAD!=null&&here)?HEAD:0,hr=h*Math.PI/180,ch=Math.cos(hr),sh=Math.sin(hr);
   const W=340,H=340,PAD=30;
   const anchor=here||[PLACES[0].lat,PLACES[0].lng];
   /* 一般画 2.5 公里内；附近一个都没有时，放大到能看到最近的那个 */
@@ -654,10 +662,13 @@ function paintMap(here,nearestId){
   const las=pts.map(p=>p[0]),los=pts.map(p=>p[1]);
   const la0=(Math.min(...las)+Math.max(...las))/2,lo0=(Math.min(...los)+Math.max(...los))/2;
   const kx=111320*Math.cos(la0*Math.PI/180),ky=110540;
-  const xy=([la,lo])=>[(lo-lo0)*kx,(la-la0)*ky];
+  /* 跟着手机转：把你面朝的方向转到上方 */
+  const xy=([la,lo])=>{const x=(lo-lo0)*kx,y=(la-la0)*ky;return [x*ch-y*sh,x*sh+y*ch];};
   const m=pts.map(xy);
-  const spanX=Math.max(300,...m.map(p=>Math.abs(p[0]))),spanY=Math.max(300,...m.map(p=>Math.abs(p[1])));
-  const s=Math.min((W/2-PAD)/spanX,(H/2-PAD)/spanY);
+  let s;
+  if(h){const r=Math.max(300,...m.map(p=>Math.hypot(p[0],p[1])));s=(Math.min(W,H)/2-PAD)/r;}
+  else{const spanX=Math.max(300,...m.map(p=>Math.abs(p[0]))),spanY=Math.max(300,...m.map(p=>Math.abs(p[1])));
+    s=Math.min((W/2-PAD)/spanX,(H/2-PAD)/spanY);}
   const P=ll=>{const [x,y]=xy(ll);return [W/2+x*s,H/2-y*s];};
   /* 收藏点：先画点，再给每个名字找一个不和别的点、别的名字重叠的位置 */
   const FS=11,CW=11; /* 字号、每个字大约宽度 */
@@ -695,13 +706,17 @@ function paintMap(here,nearestId){
     svg.appendChild(svgEl("circle",{cx:x,cy:y,r:5,fill:"var(--red)"}));
     /* 旁边写个“你”，找个不挡字的位置 */
     const spots=[["start",x+15,y+4],["end",x-15,y+4],["middle",x,y-16],["middle",x,y+24]];
-    let sp=spots.find(([a,tx,ty])=>{const x0=a==="start"?tx:a==="end"?tx-12:tx-6;return !hit([x0,ty-11,x0+12,ty+3]);})||spots[0];
-    svg.appendChild(svgEl("text",{x:sp[1],y:sp[2],"text-anchor":sp[0],"font-size":12,"font-weight":700,fill:"var(--red)",
+    let sp=spots.find(([a,tx,ty])=>{const x0=a==="start"?tx:a==="end"?tx-12:tx-6;return !hit([x0,ty-11,x0+12,ty+3]);});
+    if(sp)svg.appendChild(svgEl("text",{x:sp[1],y:sp[2],"text-anchor":sp[0],"font-size":12,"font-weight":700,fill:"var(--red)",
       "font-family":"-apple-system,PingFang SC,sans-serif"},"你"));
   }
   /* 指北 + 比例尺 */
-  svg.appendChild(svgEl("path",{d:"M318 30 L318 12 M312 19 L318 12 L324 19",stroke:"var(--ink)","stroke-width":1.8,fill:"none","stroke-linecap":"round"}));
-  svg.appendChild(svgEl("text",{x:318,y:44,"text-anchor":"middle","font-size":10,fill:"#8a8a8a"},"北"));
+  const na=svgEl("g",{transform:"rotate("+(-h)+" 318 26)"});
+  na.appendChild(svgEl("path",{d:"M318 34 L318 14 M312 21 L318 14 L324 21",stroke:h?"var(--red)":"var(--ink)","stroke-width":1.8,fill:"none","stroke-linecap":"round"}));
+  svg.appendChild(na);
+  const nx=318+Math.sin(-hr)*20,ny=26-Math.cos(-hr)*20;
+  if(h)svg.appendChild(svgEl("text",{x:nx,y:ny+4,"text-anchor":"middle","font-size":10,fill:"var(--red)","font-weight":700},"北"));
+  else svg.appendChild(svgEl("text",{x:318,y:46,"text-anchor":"middle","font-size":10,fill:"#8a8a8a"},"北"));
   const nice=[50,100,200,250,500,1000,2000,5000].find(v=>v*s>=50)||5000;
   svg.appendChild(svgEl("line",{x1:14,y1:H-14,x2:14+nice*s,y2:H-14,stroke:"#8a8a8a","stroke-width":2}));
   svg.appendChild(svgEl("text",{x:14+nice*s/2,y:H-20,"text-anchor":"middle","font-size":10,fill:"#8a8a8a"},nice<1000?nice+" 米":nice/1000+" 公里"));
@@ -729,7 +744,9 @@ function paintNear(here){
     l.append(b," · "+g.ps.length+" 个点");
     const r=document.createElement("span");
     const f=g.ps[0];
-    if(here&&!far&&f.d!=null)r.textContent=dirOf(here[0],here[1],f.lat,f.lng)+" "+fmtD(f.d);
+    if(here&&!far&&f.d!=null){
+      r.append(arrow(bearingOf(here[0],here[1],f.lat,f.lng)),dirOf(here[0],here[1],f.lat,f.lng)+" "+fmtD(f.d));
+    }
     h.append(l,r);sec.appendChild(h);
     g.ps.forEach(p=>sec.appendChild(card(p,p.id===nearestId,here&&!far&&p.d!=null)));
     box.appendChild(sec);
@@ -776,7 +793,7 @@ function card(p,top,showD){
     el.querySelector(".plc-nm").textContent=p.name;
     const tag=document.createElement("span");tag.className="plc-tag";tag.textContent=p.tag;
     el.querySelector(".plc-nm").appendChild(tag);
-    el.querySelector(".plc-d").textContent=showD?fmtD(p.d):"";
+    if(showD&&lastHere){const pd=el.querySelector(".plc-d");pd.append(arrow(bearingOf(lastHere[0],lastHere[1],p.lat,p.lng)),fmtD(p.d));}
     el.querySelector(".plc-nt").textContent=p.note;
     const st=openState(p,new Date());
     if(st){
@@ -796,6 +813,43 @@ function card(p,top,showD){
       el.appendChild(box);
     }
     return el;
+}
+/* ========== 指南针：跟着手机转 ========== */
+let HEAD=null,compOn=false,compType=null,drawnHead=null,drawT=0;
+function arrow(b){const a=document.createElement("span");a.className="arw";a.dataset.b=b;a.textContent="↑";
+  a.style.transform="rotate("+((b-(HEAD||0))|0)+"deg)";return a;}
+function applyHeading(){
+  document.querySelectorAll(".arw").forEach(a=>{a.style.transform="rotate("+((+a.dataset.b-(HEAD||0))|0)+"deg)";});
+  const now=performance.now();
+  if(drawnHead==null||Math.abs(((HEAD-drawnHead+540)%360)-180)>2){
+    if(now-drawT>120){drawT=now;drawnHead=HEAD;if(lastMap[0])paintMap(lastMap[0],lastMap[1]);}
+  }
+}
+function onOrient(e){
+  let h=null;
+  if(e.webkitCompassHeading!=null)h=e.webkitCompassHeading;          /* iPhone */
+  else if((e.absolute||e.type==="deviceorientationabsolute")&&e.alpha!=null)h=360-e.alpha; /* 安卓 */
+  if(h==null)return;
+  h+=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
+  h=(h%360+360)%360;
+  if(HEAD==null)HEAD=h;
+  else{const d=((h-HEAD+540)%360)-180;HEAD=(HEAD+d*.3+360)%360;}   /* 平滑一下，免得抖 */
+  requestAnimationFrame(applyHeading);
+}
+function startCompass(){
+  if(compOn)return;
+  const listen=()=>{
+    compType="ondeviceorientationabsolute" in window?"deviceorientationabsolute":"deviceorientation";
+    window.addEventListener(compType,onOrient);compOn=true;
+  };
+  const D=window.DeviceOrientationEvent;
+  if(!D)return;
+  if(typeof D.requestPermission==="function"){            /* iPhone 要点一下授权 */
+    D.requestPermission().then(r=>{if(r==="granted")listen();}).catch(()=>{});
+  }else listen();
+}
+function stopCompass(){
+  if(compOn){window.removeEventListener(compType,onOrient);compOn=false;}
 }
 /* 停在「附近」页时持续定位，走动 10 米以上就重画；离开页面或锁屏就停 */
 let watchId=null,lastHere=null,gotFix=false;
@@ -828,12 +882,12 @@ function stopWatch(){
 }
 paintNear(null);
 setInterval(()=>{if(nearOn())paintNear(gotFix?lastHere:null);},60000); /* 每分钟刷新开放状态 */
-document.getElementById("nearBtn").onclick=()=>{stopWatch();lastHere=null;startWatch();};
+document.getElementById("nearBtn").onclick=()=>{stopWatch();lastHere=null;startWatch();startCompass();};
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
-  if(b.dataset.page==="near")startWatch();else stopWatch();
+  if(b.dataset.page==="near"){startWatch();startCompass();}else{stopWatch();stopCompass();}
 }));
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden)stopWatch();else if(nearOn())startWatch();
+  if(document.hidden){stopWatch();stopCompass();}else if(nearOn()){startWatch();startCompass();}
 });
 
 /* ========== 见面倒计时 ========== */
