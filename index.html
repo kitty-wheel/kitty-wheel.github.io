@@ -32,13 +32,15 @@
     font-variant-numeric:tabular-nums;}
   .cdown:empty{display:none;}
   .cdown.arrived{cursor:default;text-align:center;}
+  .cdown .ing{color:var(--red);}
+  .cdown .zz{height:21px;width:auto;vertical-align:-3px;margin-left:4px;}
   .cdown{position:relative;cursor:pointer;user-select:none;-webkit-user-select:none;}
   .cdown .t{display:inline-block;}
   .cdown.rush .t{color:var(--ink2);}
   .rush-tip{height:18px;margin-top:6px;font-size:12px;letter-spacing:2px;color:#8a8a8a;
     opacity:0;transition:opacity .25s;}
   .rush-tip.on{opacity:1;}
-  /* 地名字体：汉仪时光体，只截取了要用到的几个字，换地名要重新截取 place.woff2 */
+  /* 地名字体：汉仪时光体，只截取了「嘉兴·ingING」，换地名要重新截取 place.woff2 */
   @font-face{font-family:"PlaceFont";src:url("place.woff2") format("woff2");font-display:swap;}
   .cd-place{color:var(--ink2);font-family:"PlaceFont",-apple-system,"PingFang SC",sans-serif;font-size:19px;}
 
@@ -906,7 +908,9 @@ const MEET_PLACE="嘉兴";
   const left=()=>Math.ceil((MEET-new Date())/1000);
   function tick(){
     const t=left();
-    if(t<=0){el.firstChild.textContent=MEET_PLACE;tEl.textContent="";tip.textContent="";el.classList.add("arrived");return;} /* 到了：只留地名，居中 */
+    if(t<=0){ /* 到了：嘉兴ing + 粽子，居中 */
+      el.innerHTML='<span class="cd-place"></span><span class="cd-place ing">ing</span><img class="zz" src="zongzi.png" alt="">';
+      el.firstChild.textContent=MEET_PLACE;tip.textContent="";el.classList.add("arrived");return;}
     if(!rushing)tEl.textContent=fmt(t);
     setTimeout(tick,1000-Date.now()%1000+20);
   }
