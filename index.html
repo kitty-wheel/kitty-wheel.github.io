@@ -184,7 +184,39 @@
   .plc .seen{border:1.5px solid #d4d4d4;border-radius:999px;background:none;padding:5px 14px;
     font-family:inherit;font-size:12px;font-weight:600;letter-spacing:1px;color:#8a8a8a;}
   .plc .seen:active{transform:scale(.95);}
-  .plc.visited{opacity:.45;}
+  .plc.visited .plc-r1,.plc.visited .plc-nt,.plc.visited .plc-st{opacity:.45;}
+  .plc.visited{border-color:#e4e4e4;}
+  /* 打卡 */
+  .plc .ck{border:1.5px solid var(--red);border-radius:999px;background:none;padding:5px 14px;
+    font-family:inherit;font-size:12px;font-weight:600;letter-spacing:1px;color:var(--red);}
+  .plc .ck:active{transform:scale(.95);}
+  .ckl{margin-top:12px;border-top:1px dashed #d8d8d8;padding-top:10px;display:flex;flex-direction:column;gap:12px;}
+  .cke-h{display:flex;justify-content:space-between;font-size:11px;letter-spacing:1px;color:#8a8a8a;}
+  .cke-h button{border:none;background:none;color:#b0b0b0;font-size:11px;font-family:inherit;padding:0;}
+  .cke-t{font-size:14px;line-height:1.55;margin-top:3px;white-space:pre-wrap;word-break:break-word;}
+  .cke-ph{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .cke-ph img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1.5px solid var(--ink);}
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:20;display:none;}
+  .sheet-bg.on{display:block;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:2.5px solid var(--ink);
+    border-radius:18px 18px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom));z-index:21;display:none;}
+  .sheet.on{display:block;}
+  .sheet-h{font-size:15px;font-weight:700;letter-spacing:2px;margin-bottom:12px;}
+  .sheet textarea{width:100%;height:90px;border:1.5px solid #d4d4d4;border-radius:14px;padding:10px 12px;
+    font-family:inherit;font-size:15px;resize:none;outline:none;color:var(--ink2);}
+  .sheet textarea:focus{border-color:var(--ink);}
+  .sheet-ph{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .sheet-ph img,.sheet-ph label{width:64px;height:64px;border-radius:10px;object-fit:cover;}
+  .sheet-ph label{border:1.5px dashed var(--ink);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--ink2);}
+  .sheet-ph input{display:none;}
+  .sheet-f{display:flex;gap:10px;margin-top:14px;}
+  .sheet-f button{flex:1;border:2.5px solid var(--ink);background:none;border-radius:999px;padding:11px;
+    font-family:inherit;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--ink2);}
+  .sheet-f .primary{background:var(--red);border-color:var(--red);color:#fff;}
+  .sheet-f button:disabled{opacity:.4;}
+  .viewer{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:30;display:none;align-items:center;justify-content:center;}
+  .viewer.on{display:flex;}
+  .viewer img{max-width:100%;max-height:100%;}
   .plc.visited .seen{border-color:var(--ink);color:var(--ink2);}
 </style>
 </head>
@@ -301,6 +333,15 @@
     <div id="nearList"></div>
   </div>
 </div>
+
+<div class="sheet-bg" id="ckBg"></div>
+<div class="sheet" id="ckSheet">
+  <div class="sheet-h" id="ckTitle">打卡</div>
+  <textarea id="ckText" maxlength="300" placeholder="写一句…"></textarea>
+  <div class="sheet-ph" id="ckPh"><label>＋<input type="file" id="ckFile" accept="image/*" multiple></label></div>
+  <div class="sheet-f"><button id="ckCancel">取消</button><button id="ckSave" class="primary">打卡</button></div>
+</div>
+<div class="viewer" id="viewer"><img alt=""></div>
 
 <nav class="tabs">
   <button data-page="wheel" class="on">转盘</button>
@@ -707,6 +748,7 @@ function openState(p,now){
 /* 去过：存在本机，按地名记 */
 let visited={};try{visited=JSON.parse(localStorage.getItem("kw_visited")||"{}");}catch(e){}
 const isVisited=p=>!!visited[p.name];
+let CK={},ckDB=null; /* 打卡数据，见文件末尾 */
 function toggleVisited(p){
   if(visited[p.name])delete visited[p.name];else visited[p.name]=1;
   try{localStorage.setItem("kw_visited",JSON.stringify(visited));}catch(e){}
@@ -722,7 +764,7 @@ function card(p,top,showD){
       ?"https://uri.amap.com/marker?position="+p.lng+","+p.lat+"&name="+encodeURIComponent(p.name)+"&src=kittywheel&coordinate=gaode&callnative=1"
       :"https://uri.amap.com/search?keyword="+encodeURIComponent(p.name)+"&city=330400&src=kittywheel&callnative=1";
     el.innerHTML='<div class="plc-r1"><div class="plc-nm"></div><div class="plc-d"></div></div><div class="plc-nt"></div>'+
-      '<div class="plc-btns"><a target="_blank" rel="noopener">高德打开</a><button class="seen"></button></div>';
+      '<div class="plc-btns"><a target="_blank" rel="noopener">高德打开</a><button class="ck">打卡</button><button class="seen"></button></div>';
     el.querySelector(".plc-nm").textContent=p.name;
     const tag=document.createElement("span");tag.className="plc-tag";tag.textContent=p.tag;
     el.querySelector(".plc-nm").appendChild(tag);
@@ -738,6 +780,13 @@ function card(p,top,showD){
     const sb=el.querySelector(".seen");
     sb.textContent=isVisited(p)?"去过 ✓":"去过";
     sb.onclick=()=>toggleVisited(p);
+    el.querySelector(".ck").onclick=()=>openCheckin(p);
+    const mine=(CK[p.name]||[]);
+    if(mine.length){
+      const box=document.createElement("div");box.className="ckl";
+      mine.forEach(e=>box.appendChild(ckEntry(e)));
+      el.appendChild(box);
+    }
     return el;
 }
 /* 停在「附近」页时持续定位，走动 10 米以上就重画；离开页面或锁屏就停 */
@@ -824,6 +873,105 @@ const MEET_PLACE="嘉兴";
     })(t0);
   });
 })();
+
+/* ========== 打卡（先存本机，以后同步到服务器） ========== */
+/* 每条：{id, place, text, photos:[Blob], time, synced:false} 存在 IndexedDB */
+const URLS=new Map(); /* Blob -> 预览地址，避免重复生成 */
+const blobURL=b=>{if(!URLS.has(b))URLS.set(b,URL.createObjectURL(b));return URLS.get(b);};
+function dbOpen(){
+  return new Promise((res,rej)=>{
+    if(!window.indexedDB)return rej("no idb");
+    const r=indexedDB.open("kitty-wheel",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("checkins",{keyPath:"id"});
+    r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
+  });
+}
+function dbAll(){return new Promise((res,rej)=>{const q=ckDB.transaction("checkins").objectStore("checkins").getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+function dbPut(e){return new Promise((res,rej)=>{const t=ckDB.transaction("checkins","readwrite");t.objectStore("checkins").put(e);t.oncomplete=res;t.onerror=()=>rej(t.error);});}
+function dbDel(id){return new Promise((res,rej)=>{const t=ckDB.transaction("checkins","readwrite");t.objectStore("checkins").delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error);});}
+function ckIndex(all){
+  CK={};all.sort((a,b)=>b.time-a.time).forEach(e=>(CK[e.place]=CK[e.place]||[]).push(e));
+}
+const repaint=()=>{
+  const st=document.getElementById("nearSt"),keep=gotFix?null:st.textContent;
+  paintNear(gotFix?lastHere:null);
+  if(keep!==null)st.textContent=keep;
+};
+dbOpen().then(db=>{ckDB=db;return dbAll();}).then(all=>{ckIndex(all);repaint();}).catch(()=>{});
+
+function ckEntry(e){
+  const d=document.createElement("div");
+  const t=new Date(e.time),p2=n=>String(n).padStart(2,"0");
+  d.innerHTML='<div class="cke-h"><span></span><button>删除</button></div>';
+  d.querySelector("span").textContent=(t.getMonth()+1)+"/"+t.getDate()+" "+p2(t.getHours())+":"+p2(t.getMinutes());
+  d.querySelector("button").onclick=async()=>{
+    if(!confirm("删除这条打卡？"))return;
+    await dbDel(e.id);ckIndex(await dbAll());repaint();
+  };
+  if(e.text){const x=document.createElement("div");x.className="cke-t";x.textContent=e.text;d.appendChild(x);}
+  if(e.photos&&e.photos.length){
+    const ph=document.createElement("div");ph.className="cke-ph";
+    e.photos.forEach(b=>{const im=document.createElement("img");im.src=blobURL(b);im.onclick=()=>view(im.src);ph.appendChild(im);});
+    d.appendChild(ph);
+  }
+  return d;
+}
+function view(src){const v=document.getElementById("viewer");v.querySelector("img").src=src;v.classList.add("on");}
+document.getElementById("viewer").onclick=()=>document.getElementById("viewer").classList.remove("on");
+
+/* 照片压缩：长边 1280，JPEG 0.8 */
+async function shrink(file){
+  let bmp;
+  try{bmp=await createImageBitmap(file,{imageOrientation:"from-image"});}
+  catch(e){bmp=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file);});}
+  const w=bmp.width,h=bmp.height,k=Math.min(1,1280/Math.max(w,h));
+  const c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+  c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+  return await new Promise(res=>c.toBlob(res,"image/jpeg",.8));
+}
+
+let ckPlace=null,ckPhotos=[];
+function openCheckin(p){
+  if(!ckDB){alert("这个浏览器存不了打卡，换手机自带浏览器试试");return;}
+  ckPlace=p;ckPhotos=[];
+  document.getElementById("ckTitle").textContent="打卡 · "+p.name;
+  document.getElementById("ckText").value="";
+  paintPh();
+  document.getElementById("ckBg").classList.add("on");
+  document.getElementById("ckSheet").classList.add("on");
+}
+function closeCheckin(){
+  document.getElementById("ckBg").classList.remove("on");
+  document.getElementById("ckSheet").classList.remove("on");
+}
+function paintPh(){
+  const box=document.getElementById("ckPh");
+  box.querySelectorAll("img").forEach(x=>x.remove());
+  const add=box.querySelector("label");
+  ckPhotos.forEach((b,i)=>{
+    const im=document.createElement("img");im.src=blobURL(b);
+    im.onclick=()=>{ckPhotos.splice(i,1);paintPh();}; /* 点一下去掉这张 */
+    box.insertBefore(im,add);
+  });
+  add.style.display=ckPhotos.length>=6?"none":"";
+}
+document.getElementById("ckFile").onchange=async ev=>{
+  const files=[...ev.target.files].slice(0,6-ckPhotos.length);ev.target.value="";
+  const btn=document.getElementById("ckSave");btn.disabled=true;btn.textContent="处理照片…";
+  for(const f of files){try{ckPhotos.push(await shrink(f));}catch(e){}}
+  btn.disabled=false;btn.textContent="打卡";paintPh();
+};
+document.getElementById("ckCancel").onclick=closeCheckin;
+document.getElementById("ckBg").onclick=closeCheckin;
+document.getElementById("ckSave").onclick=async()=>{
+  const text=document.getElementById("ckText").value.trim();
+  if(!text&&!ckPhotos.length){closeCheckin();return;}
+  const e={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),place:ckPlace.name,text,photos:ckPhotos.slice(),time:Date.now(),synced:false};
+  try{await dbPut(e);}catch(err){alert("没存上，可能手机空间不够");return;}
+  if(!visited[ckPlace.name]){visited[ckPlace.name]=1;try{localStorage.setItem("kw_visited",JSON.stringify(visited));}catch(_){}}
+  ckIndex(await dbAll());closeCheckin();repaint();
+  if(navigator.vibrate)navigator.vibrate(15);
+};
 </script>
 </body>
 </html>
